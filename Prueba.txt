@@ -1,0 +1,7 @@
+int main(){
+    int n1:_:
+    while(n1 < 10){
+        n1 = n1 + i:_:
+    }
+    Finish 0:_:
+}
