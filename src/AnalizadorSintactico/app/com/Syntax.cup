@@ -5,10 +5,6 @@ parser code
 {: 
     private Symbol s;
 
-    public Syntax() {
-        super();
-    }
-
     public void syntax_error(Symbol s){
         this.s = s;
     }
@@ -32,25 +28,26 @@ parser code
     }
 :};
 
-terminal TipoDato, TipoInt, TipoString, TipoChar, TipoBoolean, TipoDouble, TipoFloat;
+terminal TipoInt, TipoString, TipoChar, TipoBoolean, TipoDouble, TipoFloat;
 terminal InicioPrograma, EntradaInfo, OperadorEntrada, SalidaInfo, OperadorSalida, SaltoLinea;
 terminal CadenaText, CharText, ConcatenacionText;
 terminal ParentesisApertura, ParentesisCierre, LlaveApertura, LlaveCierre;
 terminal CorcheteApertura, CorcheteCierre, Separador, OperadorAsignacion;
-terminal OperadorAritmetico, OperadorSuma, OperadorResta, OperadorMultiplicacion, OperadorDivision;
-terminal OperadorRelacional, OperadorMayor, OperadorMenor, OperadorMayorIgual, OperadorMenorIgual, OperadorIgual, OperadorDiferente;
-terminal OperadorLogico, OperadorLAnd, OperadorLOr, OperadorLNot;
+terminal OperadorSuma, OperadorResta, OperadorMultiplicacion, OperadorDivision;
+terminal OperadorMayor, OperadorMenor, OperadorMayorIgual, OperadorMenorIgual, OperadorIgual, OperadorDiferente;
+terminal OperadorLAnd, OperadorLOr, OperadorLNot;
 terminal OperadorIncremento, OperadorDecremento;
-terminal OperadorAtribucion, OperadorASuma, OperadorAResta, OperadorAMultiplicacion, OperadorADivision, OperadorAModulo;
+terminal OperadorASuma, OperadorAResta, OperadorAMultiplicacion, OperadorADivision, OperadorAModulo;
 terminal OperadorBooleano, OperadorTrue, OperadorFalse;
 terminal Identificador;
-terminal InstruccionBucle, InstruccionWhile;
-terminal InstruccionCondicional, InstruccionIf, InstruccionElse;
+terminal InstruccionWhile;
+terminal InstruccionIf, InstruccionElse;
 terminal Numero, FinLinea, FinPrograma;
 terminal ERROR;
 
-non terminal PROGRAMA, DECLARACION, DECLARACIONES, INSTRUCCION, INSTRUCCIONES;
-non terminal EXPRESION, TIPO, LITERAL, ASIGNACION;
+non terminal PROGRAMA, DECLARACION, LISTA_DECLARACIONES, DECLARACION_SIMPLE, INSTRUCCION, INSTRUCCIONES;
+non terminal INSTRUCCION_CIN, INSTRUCCION_COUT, INSTRUCCION_CONDICIONAL, INSTRUCCION_WHILE;
+non terminal INCREMENTO, DECREMENTO, EXPRESION, CONCATENAR, TIPO, LITERAL, ASIGNACION;
 
 precedence left OperadorLOr;
 precedence left OperadorLAnd;
@@ -69,14 +66,21 @@ INSTRUCCIONES ::= INSTRUCCIONES INSTRUCCION
 
 INSTRUCCION ::= DECLARACION FinLinea
               | ASIGNACION FinLinea
-              | SalidaInfo OperadorSalida EXPRESION FinLinea
-              | EntradaInfo OperadorEntrada Identificador FinLinea
-              | InstruccionIf ParentesisApertura EXPRESION ParentesisCierre LlaveApertura INSTRUCCIONES LlaveCierre
-              | InstruccionWhile ParentesisApertura EXPRESION ParentesisCierre LlaveApertura INSTRUCCIONES LlaveCierre
+              | INCREMENTO FinLinea
+              | DECREMENTO FinLinea
+              | INSTRUCCION_COUT FinLinea
+              | INSTRUCCION_CIN FinLinea
+              | INSTRUCCION_CONDICIONAL
+              | INSTRUCCION_WHILE
               | FinPrograma Numero FinLinea;
 
-DECLARACION ::= TIPO Identificador
-              | TIPO Identificador OperadorAsignacion EXPRESION;
+DECLARACION ::= TIPO LISTA_DECLARACIONES;
+
+LISTA_DECLARACIONES ::= LISTA_DECLARACIONES Separador DECLARACION_SIMPLE
+                      | DECLARACION_SIMPLE;
+
+DECLARACION_SIMPLE ::= Identificador
+                     | Identificador OperadorAsignacion EXPRESION;
 
 TIPO ::= TipoInt
        | TipoFloat
@@ -87,10 +91,38 @@ TIPO ::= TipoInt
 
 ASIGNACION ::= Identificador OperadorAsignacion EXPRESION;
 
+INCREMENTO ::= Identificador OperadorIncremento;
+
+DECREMENTO ::= Identificador OperadorDecremento;
+
+INSTRUCCION_CIN ::= EntradaInfo OperadorEntrada Identificador;
+
+INSTRUCCION_COUT ::= SalidaInfo OperadorSalida EXPRESION
+                   | SalidaInfo OperadorSalida EXPRESION OperadorSalida SaltoLinea
+                   | SalidaInfo OperadorSalida EXPRESION CONCATENAR
+                   | SalidaInfo OperadorSalida EXPRESION CONCATENAR OperadorSalida SaltoLinea;
+
+CONCATENAR ::= ConcatenacionText EXPRESION 
+             | CONCATENAR ConcatenacionText EXPRESION; 
+
+INSTRUCCION_CONDICIONAL ::= InstruccionIf ParentesisApertura EXPRESION ParentesisCierre LlaveApertura INSTRUCCIONES LlaveCierre
+                          | InstruccionIf ParentesisApertura EXPRESION ParentesisCierre LlaveApertura INSTRUCCIONES LlaveCierre InstruccionElse LlaveApertura INSTRUCCIONES LlaveCierre;
+
+INSTRUCCION_WHILE ::= InstruccionWhile ParentesisApertura EXPRESION ParentesisCierre LlaveApertura INSTRUCCIONES LlaveCierre;
+                    
 EXPRESION ::= EXPRESION OperadorSuma EXPRESION
             | EXPRESION OperadorResta EXPRESION
             | EXPRESION OperadorMultiplicacion EXPRESION
             | EXPRESION OperadorDivision EXPRESION
+            | EXPRESION OperadorMayor EXPRESION
+            | EXPRESION OperadorMayorIgual EXPRESION
+            | EXPRESION OperadorMenor EXPRESION
+            | EXPRESION OperadorMenorIgual EXPRESION
+            | EXPRESION OperadorIgual EXPRESION
+            | EXPRESION OperadorDiferente EXPRESION
+            | EXPRESION OperadorLAnd EXPRESION
+            | EXPRESION OperadorLOr EXPRESION
+            | OperadorLNot EXPRESION
             | ParentesisApertura EXPRESION ParentesisCierre
             | LITERAL
             | Identificador;
