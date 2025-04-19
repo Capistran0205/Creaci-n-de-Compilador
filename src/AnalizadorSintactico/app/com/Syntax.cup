@@ -1,0 +1,102 @@
+package AnalizadorSintactico.app.com;
+import java_cup.runtime.Symbol;
+
+parser code
+{: 
+    private Symbol s;
+
+    public Syntax() {
+        super();
+    }
+
+    public void syntax_error(Symbol s){
+        this.s = s;
+    }
+
+    public Symbol getS(){
+        return this.s;
+    }
+
+    public void report_error(String message, Object info) {
+        StringBuilder m = new StringBuilder("Error");
+        if (info instanceof java_cup.runtime.Symbol) {
+            java_cup.runtime.Symbol s = ((java_cup.runtime.Symbol) info);
+            if (s.left >= 0) {                
+                m.append(" in line "+(s.left+1));   
+                if (s.right >= 0)                    
+                    m.append(", column "+(s.right+1));
+            }
+        }
+        m.append(" : "+message);
+        System.err.println(m);
+    }
+:};
+
+terminal TipoDato, TipoInt, TipoString, TipoChar, TipoBoolean, TipoDouble, TipoFloat;
+terminal InicioPrograma, EntradaInfo, OperadorEntrada, SalidaInfo, OperadorSalida, SaltoLinea;
+terminal CadenaText, CharText, ConcatenacionText;
+terminal ParentesisApertura, ParentesisCierre, LlaveApertura, LlaveCierre;
+terminal CorcheteApertura, CorcheteCierre, Separador, OperadorAsignacion;
+terminal OperadorAritmetico, OperadorSuma, OperadorResta, OperadorMultiplicacion, OperadorDivision;
+terminal OperadorRelacional, OperadorMayor, OperadorMenor, OperadorMayorIgual, OperadorMenorIgual, OperadorIgual, OperadorDiferente;
+terminal OperadorLogico, OperadorLAnd, OperadorLOr, OperadorLNot;
+terminal OperadorIncremento, OperadorDecremento;
+terminal OperadorAtribucion, OperadorASuma, OperadorAResta, OperadorAMultiplicacion, OperadorADivision, OperadorAModulo;
+terminal OperadorBooleano, OperadorTrue, OperadorFalse;
+terminal Identificador;
+terminal InstruccionBucle, InstruccionWhile;
+terminal InstruccionCondicional, InstruccionIf, InstruccionElse;
+terminal Numero, FinLinea, FinPrograma;
+terminal ERROR;
+
+non terminal PROGRAMA, DECLARACION, DECLARACIONES, INSTRUCCION, INSTRUCCIONES;
+non terminal EXPRESION, TIPO, LITERAL, ASIGNACION;
+
+precedence left OperadorLOr;
+precedence left OperadorLAnd;
+precedence nonassoc OperadorIgual, OperadorDiferente;
+precedence nonassoc OperadorMayor, OperadorMenor, OperadorMayorIgual, OperadorMenorIgual;
+precedence left OperadorSuma, OperadorResta;
+precedence left OperadorMultiplicacion, OperadorDivision;
+precedence right OperadorLNot; // negación lógica (unario)
+
+start with PROGRAMA;
+
+PROGRAMA ::= TipoInt InicioPrograma ParentesisApertura ParentesisCierre LlaveApertura INSTRUCCIONES LlaveCierre;
+
+INSTRUCCIONES ::= INSTRUCCIONES INSTRUCCION
+                | INSTRUCCION;
+
+INSTRUCCION ::= DECLARACION FinLinea
+              | ASIGNACION FinLinea
+              | SalidaInfo OperadorSalida EXPRESION FinLinea
+              | EntradaInfo OperadorEntrada Identificador FinLinea
+              | InstruccionIf ParentesisApertura EXPRESION ParentesisCierre LlaveApertura INSTRUCCIONES LlaveCierre
+              | InstruccionWhile ParentesisApertura EXPRESION ParentesisCierre LlaveApertura INSTRUCCIONES LlaveCierre
+              | FinPrograma Numero FinLinea;
+
+DECLARACION ::= TIPO Identificador
+              | TIPO Identificador OperadorAsignacion EXPRESION;
+
+TIPO ::= TipoInt
+       | TipoFloat
+       | TipoDouble
+       | TipoString
+       | TipoChar
+       | TipoBoolean;
+
+ASIGNACION ::= Identificador OperadorAsignacion EXPRESION;
+
+EXPRESION ::= EXPRESION OperadorSuma EXPRESION
+            | EXPRESION OperadorResta EXPRESION
+            | EXPRESION OperadorMultiplicacion EXPRESION
+            | EXPRESION OperadorDivision EXPRESION
+            | ParentesisApertura EXPRESION ParentesisCierre
+            | LITERAL
+            | Identificador;
+
+LITERAL ::= Numero
+          | CadenaText
+          | CharText
+          | OperadorTrue
+          | OperadorFalse;

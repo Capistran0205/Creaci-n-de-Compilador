@@ -5,6 +5,11 @@
 package Compilador.app.com;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import javax.swing.JOptionPane;
 
 /**
  *
@@ -15,24 +20,38 @@ public class Main {
     /**
      * @param args the command line arguments
      */
-// Método principal: el punto de entrada de cualquier aplicación Java
-    public static void main(String[] args) {
-
+    public static void main(String[] args) throws Exception {
         // Ruta del archivo .flex que contiene las reglas del analizador léxico
-        String ruta = "C:/Users/capis/OneDrive/Documentos/NetBeansProjects/Compilador/src/AnalizadorLexico/app/com/Lexer.flex";
-
-        // Llama al método que genera el analizador léxico a partir del archivo .flex
-        generarLexer(ruta);
+        String ruta = "C:/Users/capis/OneDrive/Documentos/NetBeansProjects/Compilador/src/AnalizadorLexico/app/com/Lexer.flex"; // Para el lexer
+        String ruta1 = "C:/Users/capis/OneDrive/Documentos/NetBeansProjects/Compilador/src/AnalizadorSintactico/app/com/LexerCup.flex"; // Lexer para el sintáctico
+        String[] rutasS = {"-parser", "Syntax", "C:/Users/capis/OneDrive/Documentos/NetBeansProjects/Compilador/src/AnalizadorSintactico/app/com/Syntax.cup"
+        };
+        // generarLex(ruta);
+        generarLexAndCup(ruta1, rutasS);
     }
-
-// Método que genera el analizador léxico usando JFlex
-    public static void generarLexer(String ruta) {
-
-        // Crea un objeto File con la ruta al archivo .flex
-        File archivo = new File(ruta);
-
-        // Usa la clase de JFlex para generar el código del analizador léxico
+    public static void generarLex(String rutaLex){
+        File archivo;
+        archivo = new File(rutaLex);
         JFlex.Main.generate(archivo);
     }
+    public static void generarLexAndCup(String rutaCup, String [] rutasS) throws IOException, Exception{
+        File archivo;
+        archivo = new File(rutaCup); // Archivo del lexer para el sintáctico
+        JFlex.Main.generate(archivo); // Creación del Lexer para el sintáctico
+        java_cup.Main.main(rutasS);
 
+        Path rutaSym = Paths.get("C:/Users/capis/OneDrive/Documentos/NetBeansProjects/Compilador/src/AnalizadorSintactico/app/com/sym.java");
+        if (Files.exists(rutaSym)) {
+            Files.delete(rutaSym); // Eliminación del paquete, permitiendo generar uno nuevo en caso de ser necesario                       
+        }
+        Files.move(Paths.get("C:/Users/capis/OneDrive/Documentos/NetBeansProjects/Compilador/sym.java"),
+                Paths.get("C:/Users/capis/OneDrive/Documentos/NetBeansProjects/Compilador/src/AnalizadorSintactico/app/com/sym.java"));
+
+        Path rutaSyn = Paths.get("C:/Users/capis/OneDrive/Documentos/NetBeansProjects/Compilador/src/AnalizadorSintactico/app/com/Syntax.java");
+        if (Files.exists(rutaSyn)) {
+            Files.delete(rutaSyn); // Eliminación del paquete, permitiendo generar uno nuevo en caso de ser necesario
+        }
+        Files.move(Paths.get("C:/Users/capis/OneDrive/Documentos/NetBeansProjects/Compilador/Syntax.java"),
+                Paths.get("C:/Users/capis/OneDrive/Documentos/NetBeansProjects/Compilador/src/AnalizadorSintactico/app/com/Syntax.java"));
+    }    
 }
