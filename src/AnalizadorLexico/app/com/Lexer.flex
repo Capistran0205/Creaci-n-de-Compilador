@@ -9,7 +9,7 @@ import static Compilador.app.com.Tokens.*;
 
 L = [a-zA-Z]+
 D = [0-9]+
-espacio = [ , \t, \r, \n]+
+espacio = [ , \t, \r]+
 
 %{
     public String lexeme;
@@ -31,6 +31,7 @@ main { lexeme = yytext(); return InicioPrograma; }
 "//".* { /* Ignorar comentario de una línea */ }
 "/*"([^*]|\*+[^*/])*\*+ "/" { /* Ignorar comentario multilínea */ }
 
+\n[\t\r]* { lexeme = yytext(); return Linea; }
 "=" { lexeme = yytext(); return OperadorAsignacion; }
 "+" | "-" | "*" | "/" { lexeme = yytext(); return OperadorAritmetico; }
 

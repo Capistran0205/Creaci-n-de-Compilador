@@ -43,7 +43,7 @@ false { return new Symbol (sym.OperadorFalse, yychar, yyline, yytext()); }
 
 {espacio} { /* Ignorar espacios */ }
 "//".* { /* Ignorar comentario de una línea */ }
-"/*"([^*]|\*+[^*/])*\*+ "/" { /* Ignorar comentario multilínea */ }
+"/"([^]|\+[^/])\+ "/" { /* Ignorar comentario multilínea */ }
 
 "=" { return new Symbol (sym.OperadorAsignacion, yychar, yyline, yytext());}
 "+" { return new Symbol (sym.OperadorSuma, yychar, yyline, yytext());}

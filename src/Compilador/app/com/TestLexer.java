@@ -19,14 +19,19 @@ import java.io.StringReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java_cup.runtime.Symbol;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.filechooser.FileSystemView;
 
 /**
  *
  * @author capis
  */
 public class TestLexer extends javax.swing.JFrame {
-    int numToken, numLinea;
+
+    int numToken, contador;
+
     /**
      * Creates new form TestLexer
      */
@@ -35,7 +40,7 @@ public class TestLexer extends javax.swing.JFrame {
         this.setTitle("Fases de un Compilador");
         this.setResizable(false);
         this.setLocationRelativeTo(null);
-        this.setSize(new Dimension(800, 450));
+        this.setSize(new Dimension(820, 430));
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
@@ -61,6 +66,7 @@ public class TestLexer extends javax.swing.JFrame {
         jLabel3 = new javax.swing.JLabel();
         jScrollPane3 = new javax.swing.JScrollPane();
         jTxtValidacionSintactico = new javax.swing.JTextArea();
+        jBtnCargarCodigo = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
@@ -83,6 +89,7 @@ public class TestLexer extends javax.swing.JFrame {
             }
         });
 
+        jTxtValidacionTokens.setEditable(false);
         jTxtValidacionTokens.setColumns(20);
         jTxtValidacionTokens.setRows(5);
         jScrollPane2.setViewportView(jTxtValidacionTokens);
@@ -111,9 +118,19 @@ public class TestLexer extends javax.swing.JFrame {
         jLabel3.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         jLabel3.setText("Válidación Sintáctico:");
 
+        jTxtValidacionSintactico.setEditable(false);
         jTxtValidacionSintactico.setColumns(20);
         jTxtValidacionSintactico.setRows(5);
         jScrollPane3.setViewportView(jTxtValidacionSintactico);
+
+        jBtnCargarCodigo.setBackground(new java.awt.Color(255, 51, 51));
+        jBtnCargarCodigo.setForeground(new java.awt.Color(0, 0, 0));
+        jBtnCargarCodigo.setText("Cargar Código Fuente");
+        jBtnCargarCodigo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBtnCargarCodigoActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -136,11 +153,12 @@ public class TestLexer extends javax.swing.JFrame {
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                     .addComponent(jBtnSintactico, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(jBtnAnalizar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jBtnLimpiar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                                    .addComponent(jBtnLimpiar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jBtnCargarCodigo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
                         .addGap(18, 18, 18)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 307, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel2)))))
+                            .addComponent(jLabel2)
+                            .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 310, javax.swing.GroupLayout.PREFERRED_SIZE)))))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -154,10 +172,12 @@ public class TestLexer extends javax.swing.JFrame {
                     .addComponent(jScrollPane1)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(jBtnAnalizar, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
+                        .addGap(24, 24, 24)
                         .addComponent(jBtnSintactico, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(18, 18, 18)
-                        .addComponent(jBtnLimpiar, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(jBtnLimpiar, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(jBtnCargarCodigo, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 244, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addComponent(jLabel3)
@@ -166,7 +186,7 @@ public class TestLexer extends javax.swing.JFrame {
                 .addContainerGap(33, Short.MAX_VALUE))
         );
 
-        getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 800, 430));
+        getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 820, 430));
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -184,112 +204,151 @@ public class TestLexer extends javax.swing.JFrame {
 
 // Analizar el contenido del archivo
         try (Reader lector = new BufferedReader(new FileReader(file))) {
-            Lexer lexer = new Lexer(lector);
-            StringBuilder resultado = new StringBuilder();
             numToken = 1;
-            //numLinea = 1;
+            contador = 1;
+            Lexer lexer = new Lexer(lector);
+            StringBuilder resultado = new StringBuilder("Linea " + contador + "\n");
+
             //resultado.append("Linea:").append(numLinea).append("\t\tSimbolo\n");
             Tokens tokens;
             while ((tokens = lexer.yylex()) != null) {
-                System.out.println("Token No."+numToken+" Patron: " + tokens + ", lexema: " + lexer.lexeme); // debug
+                // System.out.println("Token No." + numToken + " Patron: " + tokens + ", lexema: " + lexer.lexeme); // debug
                 switch (tokens) {
-                    case ERROR ->
+                    case Linea -> {
+                        contador++;
+                        resultado.append("Linea ").append(contador).append("\n");
+                    }
+                    case ERROR ->{
                         resultado.append("No.").append(numToken).append(" Símbolo no definido: ").append(lexer.lexeme).append("\n");
-
-                    case TipoDato ->
+                        numToken++;
+                    }
+                    case TipoDato ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-
-                    case InicioPrograma ->
+                        numToken++;
+                    }
+                    case InicioPrograma ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-
-                    case EntradaInfo ->
+                        numToken++;
+                    }
+                    case EntradaInfo ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es una ").append(tokens).append("\n");
-
-                    case OperadorEntrada ->
+                        numToken++;
+                    }
+                    case OperadorEntrada ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-
-                    case SalidaInfo ->
+                        numToken++;
+                    }
+                    case SalidaInfo ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es una ").append(tokens).append("\n");
-
-                    case OperadorSalida ->
+                        numToken++;
+                    }
+                    case OperadorSalida ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-
-                    case SaltoLinea ->
+                        numToken++;
+                    }
+                    case SaltoLinea ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-                       
-                    case CharText ->
+                        numToken++;
+                    }
+                    case CharText ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-                        
-                    case CadenaText ->
+                        numToken++;
+                    }
+                    case CadenaText ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-                      
-                    case ConcatenacionText ->
+                        numToken++;
+                    }
+                    case ConcatenacionText ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-                        
-                    case ParentesisApertura ->
+                        numToken++;
+                    }
+                    case ParentesisApertura ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-
-                    case ParentesisCierre ->
+                        numToken++;
+                    }
+                    case ParentesisCierre ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-
-                    case LlaveApertura ->
+                        numToken++;
+                    }
+                    case LlaveApertura ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es una ").append(tokens).append("\n");
-
-                    case LlaveCierre ->
+                        numToken++;
+                    }
+                    case LlaveCierre ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es una ").append(tokens).append("\n");
-
-                    case CorcheteApertura ->
+                        numToken++;
+                    }
+                    case CorcheteApertura ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-                        
-                    case CorcheteCierre -> 
+                        numToken++;
+                    }
+                    case CorcheteCierre ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-                        
-                    case OperadorAsignacion ->
+                        numToken++;
+                    }
+                    case OperadorAsignacion ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-
-                    case OperadorAritmetico ->
+                        numToken++;
+                    }
+                    case OperadorAritmetico ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-                        
-                    case OperadorAtribucion ->
+                        numToken++;
+                    }
+                    case OperadorAtribucion ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-
-                    case OperadorRelacional ->
+                        numToken++;
+                    }
+                    case OperadorRelacional ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-
-                    case OperadorLogico ->
+                        numToken++;
+                    }
+                    case OperadorLogico ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-                        
-                    case OperadorBooleano ->
+                        numToken++;
+                    }
+                    case OperadorBooleano ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-                        
-                    case OperadorIncremento ->
+                        numToken++;
+                    }
+                    case OperadorIncremento ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-                    
-                    case OperadorDecremento ->
-                            resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-                        
-                    case Identificador ->
+                        numToken++;
+                    }
+                    case OperadorDecremento ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-
-                    case Separador ->
+                        numToken++;
+                    }
+                    case Identificador ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-                        
-                    case InstruccionBucle ->
+                        numToken++;
+                    }
+                    case Separador ->{
+                        resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
+                        numToken++;
+                    }
+                    case InstruccionBucle ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es una ").append(tokens).append("\n");
-
-                    case InstruccionCondicional ->
+                        numToken++;
+                    }
+                    case InstruccionCondicional ->{
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es una ").append(tokens).append("\n");
-
-                    case Numero ->
+                        numToken++;
+                    }
+                    case Numero -> {
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
-
-                    case FinLinea ->
+                        numToken++;
+                    }
+                    case FinLinea -> {
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
+                        numToken++;
+                    }
 
-                    case FinPrograma ->
+                    case FinPrograma -> {
                         resultado.append("No.").append(numToken).append(" ").append(lexer.lexeme).append(" ➔ Es un ").append(tokens).append("\n");
+                        numToken++;
+                    }
                 }
-                numToken++;
+                
             }
 
             resultado.append("FIN DE IDENTIFICACIÓN DE TOKENS");
@@ -307,22 +366,42 @@ public class TestLexer extends javax.swing.JFrame {
         this.jTxtCodigoFuente.setText(null);
         this.jTxtValidacionTokens.setText(null);
         this.jTxtValidacionSintactico.setText(null);
+        this.jTxtCodigoFuente.setEditable(true);
     }//GEN-LAST:event_jBtnLimpiarActionPerformed
 
     private void jBtnSintacticoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnSintacticoActionPerformed
         String ST = jTxtCodigoFuente.getText();
         Syntax s = new Syntax(new AnalizadorSintactico.app.com.LexerCup(new StringReader(ST)));
-        
+
         try {
             s.parse();
             this.jTxtValidacionSintactico.setText("Análisis realizado correctamente");
             this.jTxtValidacionSintactico.setForeground(new Color(25, 111, 61));
         } catch (Exception ex) {
             Symbol sym = s.getS();
-            jTxtValidacionSintactico.setText("Error de sintaxis. En la linea: "+(sym.right + 1)+" Columna: "+(sym.left + 1)+", Texto: \""+sym.value+"\"");
+            jTxtValidacionSintactico.setText("Error de sintaxis. En la linea: " + (sym.right + 1) + " Columna: " + (sym.left + 1) + ", Texto: \"" + sym.value + "\"");
             jTxtValidacionSintactico.setForeground(Color.red);
         }
     }//GEN-LAST:event_jBtnSintacticoActionPerformed
+
+    private void jBtnCargarCodigoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnCargarCodigoActionPerformed
+        JFileChooser chooser = new JFileChooser(FileSystemView.getFileSystemView());
+        int opcion = chooser.showOpenDialog(this);
+        if (opcion == JFileChooser.APPROVE_OPTION) {
+            File archivo = chooser.getSelectedFile();
+            this.jTxtCodigoFuente.setEditable(false);
+            try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
+                this.jTxtCodigoFuente.setText(""); // Limpiar antes de mostrar nuevo contenido
+                String linea;
+                while ((linea = br.readLine()) != null) {
+                    this.jTxtCodigoFuente.append(linea + "\n");
+                }
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, "Error al leer el archivo:\n" + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }//GEN-LAST:event_jBtnCargarCodigoActionPerformed
 
     /**
      * @param args the command line arguments
@@ -361,6 +440,7 @@ public class TestLexer extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jBtnAnalizar;
+    private javax.swing.JButton jBtnCargarCodigo;
     private javax.swing.JButton jBtnLimpiar;
     private javax.swing.JButton jBtnSintactico;
     private javax.swing.JLabel jLabel1;

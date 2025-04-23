@@ -15,8 +15,8 @@ parser code
 
     public void report_error(String message, Object info) {
         StringBuilder m = new StringBuilder("Error");
-        if (info instanceof java_cup.runtime.Symbol) {
-            java_cup.runtime.Symbol s = ((java_cup.runtime.Symbol) info);
+        if (info instanceof Symbol) {
+            Symbol s = (Symbol) info;
             if (s.left >= 0) {                
                 m.append(" in line "+(s.left+1));   
                 if (s.right >= 0)                    
@@ -38,7 +38,7 @@ terminal OperadorMayor, OperadorMenor, OperadorMayorIgual, OperadorMenorIgual, O
 terminal OperadorLAnd, OperadorLOr, OperadorLNot;
 terminal OperadorIncremento, OperadorDecremento;
 terminal OperadorASuma, OperadorAResta, OperadorAMultiplicacion, OperadorADivision, OperadorAModulo;
-terminal OperadorBooleano, OperadorTrue, OperadorFalse;
+terminal OperadorTrue, OperadorFalse;
 terminal Identificador;
 terminal InstruccionWhile;
 terminal InstruccionIf, InstruccionElse;
@@ -55,7 +55,8 @@ precedence nonassoc OperadorIgual, OperadorDiferente;
 precedence nonassoc OperadorMayor, OperadorMenor, OperadorMayorIgual, OperadorMenorIgual;
 precedence left OperadorSuma, OperadorResta;
 precedence left OperadorMultiplicacion, OperadorDivision;
-precedence right OperadorLNot; // negación lógica (unario)
+precedence right OperadorLNot;
+precedence left ERROR;
 
 start with PROGRAMA;
 
@@ -89,7 +90,12 @@ TIPO ::= TipoInt
        | TipoChar
        | TipoBoolean;
 
-ASIGNACION ::= Identificador OperadorAsignacion EXPRESION;
+ASIGNACION ::= Identificador OperadorAsignacion EXPRESION
+            | Identificador OperadorASuma EXPRESION
+            | Identificador OperadorAResta EXPRESION
+            | Identificador OperadorAMultiplicacion EXPRESION
+            | Identificador OperadorADivision EXPRESION
+            | Identificador OperadorAModulo EXPRESION;
 
 INCREMENTO ::= Identificador OperadorIncremento;
 
@@ -125,7 +131,12 @@ EXPRESION ::= EXPRESION OperadorSuma EXPRESION
             | OperadorLNot EXPRESION
             | ParentesisApertura EXPRESION ParentesisCierre
             | LITERAL
-            | Identificador;
+            | Identificador
+            | Identificador OperadorASuma EXPRESION
+            | Identificador OperadorAResta EXPRESION
+            | Identificador OperadorAMultiplicacion EXPRESION
+            | Identificador OperadorADivision EXPRESION
+            | Identificador OperadorAModulo EXPRESION;
 
 LITERAL ::= Numero
           | CadenaText

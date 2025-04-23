@@ -29,6 +29,7 @@ public enum Tokens {
     ParentesisCierre,
     LlaveApertura,
     LlaveCierre,
+    Linea,
     CorcheteApertura,
     CorcheteCierre,
     Separador,

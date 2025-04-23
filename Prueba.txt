@@ -1,8 +1,10 @@
 int main(){
-   int n1 = 0,n2=10,n3=20:_:
-   boolean isConect = true,isValidate = false:_:
-   if((n1 < n2 && n2 < n3)&&(!isConect && isValidate)){
-    cout << "Mensaje"<<endl:_:
-}
-Finish 0:_:
+  string nombre:_:
+  string apellido:_:
+  cout << "Ingresa tu nombre: ":_:
+  cin >> nombre:_:
+  cout << "Ingresa tu apellido: ":_:
+  cin >> apellido:_:
+  cout << nombre concat apellido<<endl:_:
+  Finish 0:_:
 }
