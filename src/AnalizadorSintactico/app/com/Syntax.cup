@@ -1,5 +1,6 @@
 package AnalizadorSintactico.app.com;
 import java_cup.runtime.Symbol;
+import AAS.app.com.Nodo;
 
 parser code
 {: 
@@ -18,9 +19,9 @@ parser code
         if (info instanceof Symbol) {
             Symbol s = (Symbol) info;
             if (s.left >= 0) {                
-                m.append(" in line "+(s.left+1));   
+                m.append("en la linea "+(s.left+1));   
                 if (s.right >= 0)                    
-                    m.append(", column "+(s.right+1));
+                    m.append(", columna "+(s.right+1));
             }
         }
         m.append(" : "+message);
@@ -45,9 +46,9 @@ terminal InstruccionIf, InstruccionElse;
 terminal Numero, FinLinea, FinPrograma;
 terminal ERROR;
 
-non terminal PROGRAMA, DECLARACION, LISTA_DECLARACIONES, DECLARACION_SIMPLE, INSTRUCCION, INSTRUCCIONES;
-non terminal INSTRUCCION_CIN, INSTRUCCION_COUT, INSTRUCCION_CONDICIONAL, INSTRUCCION_WHILE;
-non terminal INCREMENTO, DECREMENTO, EXPRESION, CONCATENAR, TIPO, LITERAL, ASIGNACION;
+non terminal Nodo PROGRAMA, DECLARACION, LISTA_DECLARACIONES, DECLARACION_SIMPLE, INSTRUCCION, INSTRUCCIONES;
+non terminal Nodo INSTRUCCION_CIN, INSTRUCCION_COUT, INSTRUCCION_CONDICIONAL, INSTRUCCION_WHILE;
+non terminal Nodo INCREMENTO, DECREMENTO, EXPRESION, CONCATENAR, TIPO, LITERAL, ASIGNACION;
 
 precedence left OperadorLOr;
 precedence left OperadorLAnd;
@@ -55,91 +56,471 @@ precedence nonassoc OperadorIgual, OperadorDiferente;
 precedence nonassoc OperadorMayor, OperadorMenor, OperadorMayorIgual, OperadorMenorIgual;
 precedence left OperadorSuma, OperadorResta;
 precedence left OperadorMultiplicacion, OperadorDivision;
-precedence right OperadorLNot;
+precedence right OperadorLNot, OperadorAsignacion;
 precedence left ERROR;
 
 start with PROGRAMA;
 
-PROGRAMA ::= TipoInt InicioPrograma ParentesisApertura ParentesisCierre LlaveApertura INSTRUCCIONES LlaveCierre;
+PROGRAMA ::= TipoInt:integer InicioPrograma:m ParentesisApertura:pa ParentesisCierre:pc LlaveApertura:lla INSTRUCCIONES:ins LlaveCierre:llc{:
+                Nodo programa = new Nodo("Programa");
+                programa.agregarHijo(new Nodo(integer.toString()));
+                programa.agregarHijo(new Nodo(m.toString()));
+                programa.agregarHijo(new Nodo(pa.toString()));
+                programa.agregarHijo(new Nodo(pc.toString()));
+                programa.agregarHijo(new Nodo(lla.toString()));
+                programa.agregarHijo(ins);
+                programa.agregarHijo(new Nodo(llc.toString()));
+                RESULT = programa;
+           :};
 
-INSTRUCCIONES ::= INSTRUCCIONES INSTRUCCION
-                | INSTRUCCION;
+INSTRUCCIONES ::= INSTRUCCIONES:ins INSTRUCCION:in{:
+                    Nodo instrucciones = new Nodo("Instrucciones");
+                    instrucciones.agregarHijo(ins);
+                    instrucciones.agregarHijo(in);
+                    RESULT = instrucciones;
+                :}                
+                | INSTRUCCION:in{:
+                    Nodo instrucciones = new Nodo("Instrucciones");
+                    instrucciones.agregarHijo(in);
+                    RESULT = instrucciones;
+                :};
 
-INSTRUCCION ::= DECLARACION FinLinea
-              | ASIGNACION FinLinea
-              | INCREMENTO FinLinea
-              | DECREMENTO FinLinea
-              | INSTRUCCION_COUT FinLinea
-              | INSTRUCCION_CIN FinLinea
-              | INSTRUCCION_CONDICIONAL
-              | INSTRUCCION_WHILE
-              | FinPrograma Numero FinLinea;
+INSTRUCCION ::= DECLARACION:dec FinLinea:fnl{:
+                    Nodo instruccion = new Nodo("Instruccion");
+                    instruccion.agregarHijo(dec);
+                    instruccion.agregarHijo(new Nodo(fnl.toString()));
+                    RESULT = instruccion;
+              :}
+              | ASIGNACION:asign FinLinea:fnl{:
+                    Nodo instruccion = new Nodo("Instruccion");
+                    instruccion.agregarHijo(asign);
+                    instruccion.agregarHijo(new Nodo(fnl.toString()));
+                    RESULT = instruccion;
+              :}
+              | INCREMENTO:inc FinLinea:fnl{:
+                    Nodo instruccion = new Nodo("Instruccion");
+                    instruccion.agregarHijo(inc);
+                    instruccion.agregarHijo(new Nodo(fnl.toString()));
+                    RESULT = instruccion;
+              :}
+              | DECREMENTO:dec FinLinea:fnl{:
+                    Nodo instruccion = new Nodo("Instruccion");
+                    instruccion.agregarHijo(dec);
+                    instruccion.agregarHijo(new Nodo(fnl.toString()));
+                    RESULT = instruccion;
+              :}
+              | INSTRUCCION_COUT:inscout FinLinea:fnl{:
+                    Nodo instruccion = new Nodo("Instruccion");
+                    instruccion.agregarHijo(inscout);
+                    instruccion.agregarHijo(new Nodo(fnl.toString()));
+                    RESULT = instruccion;
+              :}
+              | INSTRUCCION_CIN:inscin FinLinea:fnl{:
+                    Nodo instruccion = new Nodo("Instruccion");
+                    instruccion.agregarHijo(inscin);
+                    instruccion.agregarHijo(new Nodo(fnl.toString()));
+                    RESULT = instruccion;
+              :}
+              | INSTRUCCION_CONDICIONAL:inscondi{:
+                    Nodo instruccion = new Nodo("Instruccion");
+                    instruccion.agregarHijo(inscondi);                   
+                    RESULT = instruccion;
+              :}
+              | INSTRUCCION_WHILE:inswhile{:
+                    Nodo instruccion = new Nodo("Instruccion");
+                    instruccion.agregarHijo(inswhile);                   
+                    RESULT = instruccion;
+              :}
+              | FinPrograma:fnpro Numero:num FinLinea:fnl{:
+                    Nodo instruccion = new Nodo("Instruccion");
+                    instruccion.agregarHijo(new Nodo(fnpro.toString()));                
+                    instruccion.agregarHijo(new Nodo(num.toString()));                
+                    instruccion.agregarHijo(new Nodo(fnl.toString()));                
+                    RESULT = instruccion;
+              :};
 
-DECLARACION ::= TIPO LISTA_DECLARACIONES;
+DECLARACION ::= TIPO:datatype LISTA_DECLARACIONES:listdec{:
+                    Nodo declaracion = new Nodo("Declaración");
+                    declaracion.agregarHijo(datatype);
+                    declaracion.agregarHijo(listdec);
+                    RESULT = declaracion;
+              :};
 
-LISTA_DECLARACIONES ::= LISTA_DECLARACIONES Separador DECLARACION_SIMPLE
-                      | DECLARACION_SIMPLE;
+LISTA_DECLARACIONES ::= LISTA_DECLARACIONES:listdec Separador:coma DECLARACION_SIMPLE:simpledec{:
+                            Nodo listaDeclaraciones = new Nodo("Lista_Declaraciones");
+                            listaDeclaraciones.agregarHijo(listdec);
+                            listaDeclaraciones.agregarHijo(new Nodo(coma.toString()));
+                            listaDeclaraciones.agregarHijo(simpledec);
+                            RESULT = listaDeclaraciones;
+                      :}
+                      | DECLARACION_SIMPLE:simpledec{:
+                            Nodo listaDeclaraciones = new Nodo("Lista_Declaraciones");
+                            listaDeclaraciones.agregarHijo(simpledec);
+                            RESULT = listaDeclaraciones;
+                      :};
 
-DECLARACION_SIMPLE ::= Identificador
-                     | Identificador OperadorAsignacion EXPRESION;
+DECLARACION_SIMPLE ::= Identificador:id{:
+                            Nodo declaracionSimple = new Nodo("Declaracion_Simple");
+                            declaracionSimple.agregarHijo(new Nodo(id.toString()));
+                            RESULT = declaracionSimple;
+                     :}
+                     | Identificador:id OperadorAsignacion:opasign EXPRESION:ex{:
+                            Nodo declaracionSimple = new Nodo("Declaracion_Simple");
+                            declaracionSimple.agregarHijo(new Nodo(id.toString()));
+                            declaracionSimple.agregarHijo(new Nodo(opasign.toString()));
+                            declaracionSimple.agregarHijo(ex);
+                            RESULT = declaracionSimple;
+                     :};
 
-TIPO ::= TipoInt
-       | TipoFloat
-       | TipoDouble
-       | TipoString
-       | TipoChar
-       | TipoBoolean;
+TIPO ::= TipoInt:datoint{:
+          Nodo tipoDato = new Nodo("Tipo_Dato");
+          tipoDato.agregarHijo(new Nodo(datoint.toString()));
+          RESULT = tipoDato;
+       :}
+       | TipoFloat:datofloat{:
+          Nodo tipoDato = new Nodo("Tipo_Dato");
+          tipoDato.agregarHijo(new Nodo(datofloat.toString()));
+          RESULT = tipoDato;
+       :}
+       | TipoDouble:datodouble{:
+          Nodo tipoDato = new Nodo("Tipo_Dato");
+          tipoDato.agregarHijo(new Nodo(datodouble.toString()));
+          RESULT = tipoDato;
+       :}
+       | TipoString:datostring{:
+          Nodo tipoDato = new Nodo("Tipo_Dato");
+          tipoDato.agregarHijo(new Nodo(datostring.toString()));
+          RESULT = tipoDato;
+       :}
+       | TipoChar:datochar{:
+          Nodo tipoDato = new Nodo("Tipo_Dato");
+          tipoDato.agregarHijo(new Nodo(datochar.toString()));
+          RESULT = tipoDato;
+       :}
+       | TipoBoolean:datobooleano{:
+          Nodo tipoDato = new Nodo("Tipo_Dato");
+          tipoDato.agregarHijo(new Nodo(datobooleano.toString()));
+          RESULT = tipoDato;
+       :};
 
-ASIGNACION ::= Identificador OperadorAsignacion EXPRESION
-            | Identificador OperadorASuma EXPRESION
-            | Identificador OperadorAResta EXPRESION
-            | Identificador OperadorAMultiplicacion EXPRESION
-            | Identificador OperadorADivision EXPRESION
-            | Identificador OperadorAModulo EXPRESION;
+ASIGNACION ::= Identificador:id OperadorAsignacion:opasign EXPRESION:ex{:
+                Nodo asignacion = new Nodo("Asignacion");
+                asignacion.agregarHijo(new Nodo(id.toString()));
+                asignacion.agregarHijo(new Nodo(opasign.toString()));
+                asignacion.agregarHijo(ex);
+                RESULT = asignacion;
+            :}
+            | Identificador:id OperadorASuma:opasuma EXPRESION:ex{:
+                Nodo asignacion = new Nodo("Asignacion");
+                asignacion.agregarHijo(new Nodo(id.toString()));
+                asignacion.agregarHijo(new Nodo(opasuma.toString()));
+                asignacion.agregarHijo(ex);
+                RESULT = asignacion;
+            :}
+            | Identificador:id OperadorAResta:oparesta EXPRESION:ex{:
+                Nodo asignacion = new Nodo("Asignacion");
+                asignacion.agregarHijo(new Nodo(id.toString()));
+                asignacion.agregarHijo(new Nodo(oparesta.toString()));
+                asignacion.agregarHijo(ex);
+                RESULT = asignacion;
+            :}
+            | Identificador:id OperadorAMultiplicacion:opamul EXPRESION:ex{:
+                Nodo asignacion = new Nodo("Asignacion");
+                asignacion.agregarHijo(new Nodo(id.toString()));
+                asignacion.agregarHijo(new Nodo(opamul.toString()));
+                asignacion.agregarHijo(ex);
+                RESULT = asignacion;
+            :}
+            | Identificador:id OperadorADivision:opadiv EXPRESION:ex{:
+                Nodo asignacion = new Nodo("Asignacion");
+                asignacion.agregarHijo(new Nodo(id.toString()));
+                asignacion.agregarHijo(new Nodo(opadiv.toString()));
+                asignacion.agregarHijo(ex);
+                RESULT = asignacion;
+            :}
+            | Identificador:id OperadorAModulo:opamodulo EXPRESION:ex{:
+                Nodo asignacion = new Nodo("Asignacion");
+                asignacion.agregarHijo(new Nodo(id.toString()));
+                asignacion.agregarHijo(new Nodo(opamodulo.toString()));
+                asignacion.agregarHijo(ex);
+                RESULT = asignacion;
+            :};
 
-INCREMENTO ::= Identificador OperadorIncremento;
+INCREMENTO ::= Identificador:id OperadorIncremento:opinc{:
+                Nodo incremento = new Nodo("Incremento");
+                incremento.agregarHijo(new Nodo(id.toString()));
+                incremento.agregarHijo(new Nodo(opinc.toString()));
+                RESULT = incremento;
+            :};
 
-DECREMENTO ::= Identificador OperadorDecremento;
+DECREMENTO ::= Identificador:id OperadorDecremento:opdecre{:
+                Nodo decremento = new Nodo("Incremento");
+                decremento.agregarHijo(new Nodo(id.toString()));
+                decremento.agregarHijo(new Nodo(opdecre.toString()));
+                RESULT = decremento;
+            :};
 
-INSTRUCCION_CIN ::= EntradaInfo OperadorEntrada Identificador;
+INSTRUCCION_CIN ::= EntradaInfo:ininfo OperadorEntrada:opin Identificador:id{:
+                Nodo instruccionCin = new Nodo("CIN");
+                instruccionCin.agregarHijo(new Nodo(ininfo.toString()));
+                instruccionCin.agregarHijo(new Nodo(opin.toString()));
+                instruccionCin.agregarHijo(new Nodo(id.toString()));
+                RESULT = instruccionCin;
+            :};
 
-INSTRUCCION_COUT ::= SalidaInfo OperadorSalida EXPRESION
-                   | SalidaInfo OperadorSalida EXPRESION OperadorSalida SaltoLinea
-                   | SalidaInfo OperadorSalida EXPRESION CONCATENAR
-                   | SalidaInfo OperadorSalida EXPRESION CONCATENAR OperadorSalida SaltoLinea;
+INSTRUCCION_COUT ::= SalidaInfo:outinfo OperadorSalida:opcout EXPRESION:ex{:
+                      Nodo instruccionCout = new Nodo("COUT");
+                      instruccionCout.agregarHijo(new Nodo(outinfo.toString()));
+                      instruccionCout.agregarHijo(new Nodo(opcout.toString()));
+                      instruccionCout.agregarHijo(ex);
+                      RESULT = instruccionCout;
+                   :}
+                   | SalidaInfo:outinfo OperadorSalida:opcout EXPRESION:ex OperadorSalida:opcout2 SaltoLinea:nwline{:
+                      Nodo instruccionCout = new Nodo("COUT");
+                      instruccionCout.agregarHijo(new Nodo(outinfo.toString()));
+                      instruccionCout.agregarHijo(new Nodo(opcout.toString()));
+                      instruccionCout.agregarHijo(ex);
+                      instruccionCout.agregarHijo(new Nodo(opcout2.toString()));
+                      instruccionCout.agregarHijo(new Nodo(nwline.toString()));                   
+                      RESULT = instruccionCout;
+                   :}
+                   | SalidaInfo:outinfo OperadorSalida:opcout EXPRESION:ex CONCATENAR:concat{:   
+                      Nodo instruccionCout = new Nodo("COUT");
+                      instruccionCout.agregarHijo(new Nodo(outinfo.toString()));
+                      instruccionCout.agregarHijo(new Nodo(opcout.toString()));
+                      instruccionCout.agregarHijo(ex);
+                      instruccionCout.agregarHijo(concat);
+                      RESULT = instruccionCout;
+                   :}
+                   | SalidaInfo:outinfo OperadorSalida:opcout EXPRESION:ex CONCATENAR:concat OperadorSalida:opcout2 SaltoLinea:nwline{:
+                      Nodo instruccionCout = new Nodo("COUT");
+                      instruccionCout.agregarHijo(new Nodo(outinfo.toString()));
+                      instruccionCout.agregarHijo(new Nodo(opcout.toString()));
+                      instruccionCout.agregarHijo(ex);
+                      instruccionCout.agregarHijo(concat);
+                      instruccionCout.agregarHijo(new Nodo(opcout2.toString()));
+                      instruccionCout.agregarHijo(new Nodo(nwline.toString())); 
+                      RESULT = instruccionCout;
+                   :};
 
-CONCATENAR ::= ConcatenacionText EXPRESION 
-             | CONCATENAR ConcatenacionText EXPRESION; 
+CONCATENAR ::= ConcatenacionText:conctext EXPRESION:ex{:
+                Nodo concatenacionTexto = new Nodo("Concatenacion_Texto");
+                concatenacionTexto.agregarHijo(new Nodo(conctext.toString()));
+                concatenacionTexto.agregarHijo(ex);
+                RESULT = concatenacionTexto;
+             :}
+             | CONCATENAR:concat ConcatenacionText:conctext EXPRESION:ex{:
+                Nodo concatenacionTexto = new Nodo("Concatenacion_Texto");
+                concatenacionTexto.agregarHijo(concat);
+                concatenacionTexto.agregarHijo(new Nodo(conctext.toString()));
+                concatenacionTexto.agregarHijo(ex);
+                RESULT = concatenacionTexto;
+             :}; 
 
-INSTRUCCION_CONDICIONAL ::= InstruccionIf ParentesisApertura EXPRESION ParentesisCierre LlaveApertura INSTRUCCIONES LlaveCierre
-                          | InstruccionIf ParentesisApertura EXPRESION ParentesisCierre LlaveApertura INSTRUCCIONES LlaveCierre InstruccionElse LlaveApertura INSTRUCCIONES LlaveCierre;
+INSTRUCCION_CONDICIONAL ::= InstruccionIf:insif ParentesisApertura:pa EXPRESION:ex ParentesisCierre:pc LlaveApertura:lla INSTRUCCIONES:ins LlaveCierre:llc{:
+                                Nodo instruccionCondicion = new Nodo("if");
+                                instruccionCondicion.agregarHijo(new Nodo(insif.toString()));
+                                instruccionCondicion.agregarHijo(new Nodo(pa.toString()));
+                                instruccionCondicion.agregarHijo(ex);
+                                instruccionCondicion.agregarHijo(new Nodo(pc.toString()));
+                                instruccionCondicion.agregarHijo(new Nodo(lla.toString()));                                
+                                instruccionCondicion.agregarHijo(ins);                              
+                                instruccionCondicion.agregarHijo(new Nodo(llc.toString()));                              
+                                RESULT = instruccionCondicion;
+                          :}
+                          | InstruccionIf:insif ParentesisApertura:pa EXPRESION:ex ParentesisCierre:pc LlaveApertura:lla INSTRUCCIONES:ins LlaveCierre:llc InstruccionElse:inselse LlaveApertura:llaelse INSTRUCCIONES:instelse LlaveCierre:llcelse{:
+                                Nodo instruccionCondicion = new Nodo("if");
+                                instruccionCondicion.agregarHijo(new Nodo(insif.toString()));
+                                instruccionCondicion.agregarHijo(new Nodo(pa.toString()));
+                                instruccionCondicion.agregarHijo(ex);
+                                instruccionCondicion.agregarHijo(new Nodo(pc.toString()));
+                                instruccionCondicion.agregarHijo(new Nodo(lla.toString()));                                
+                                instruccionCondicion.agregarHijo(ins);                              
+                                instruccionCondicion.agregarHijo(new Nodo(llc.toString()));                            
+                                instruccionCondicion.agregarHijo(new Nodo(inselse.toString()));                           
+                                instruccionCondicion.agregarHijo(new Nodo(llaelse.toString()));                         
+                                instruccionCondicion.agregarHijo(instelse);                       
+                                instruccionCondicion.agregarHijo(new Nodo(llcelse.toString()));                       
+                                RESULT = instruccionCondicion;
+                          :};
 
-INSTRUCCION_WHILE ::= InstruccionWhile ParentesisApertura EXPRESION ParentesisCierre LlaveApertura INSTRUCCIONES LlaveCierre;
+INSTRUCCION_WHILE ::= InstruccionWhile:inswhile ParentesisApertura:pa EXPRESION:ex ParentesisCierre:pc LlaveApertura:lla INSTRUCCIONES:ins LlaveCierre:llc{:
+                               Nodo instruccionWhile = new Nodo("Instruccion_While");
+                               instruccionWhile.agregarHijo(new Nodo(inswhile.toString()));
+                               instruccionWhile.agregarHijo(new Nodo(pa.toString()));
+                               instruccionWhile.agregarHijo(ex);
+                               instruccionWhile.agregarHijo(new Nodo(pc.toString()));
+                               instruccionWhile.agregarHijo(new Nodo(lla.toString()));
+                               instruccionWhile.agregarHijo(ins);
+                               instruccionWhile.agregarHijo(new Nodo(llc.toString()));
+                               RESULT = instruccionWhile;
+                    :};
                     
-EXPRESION ::= EXPRESION OperadorSuma EXPRESION
-            | EXPRESION OperadorResta EXPRESION
-            | EXPRESION OperadorMultiplicacion EXPRESION
-            | EXPRESION OperadorDivision EXPRESION
-            | EXPRESION OperadorMayor EXPRESION
-            | EXPRESION OperadorMayorIgual EXPRESION
-            | EXPRESION OperadorMenor EXPRESION
-            | EXPRESION OperadorMenorIgual EXPRESION
-            | EXPRESION OperadorIgual EXPRESION
-            | EXPRESION OperadorDiferente EXPRESION
-            | EXPRESION OperadorLAnd EXPRESION
-            | EXPRESION OperadorLOr EXPRESION
-            | OperadorLNot EXPRESION
-            | ParentesisApertura EXPRESION ParentesisCierre
-            | LITERAL
-            | Identificador
-            | Identificador OperadorASuma EXPRESION
-            | Identificador OperadorAResta EXPRESION
-            | Identificador OperadorAMultiplicacion EXPRESION
-            | Identificador OperadorADivision EXPRESION
-            | Identificador OperadorAModulo EXPRESION;
+EXPRESION ::= EXPRESION:ex OperadorSuma:opsuma EXPRESION:ex2{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(ex);
+                   expresion.agregarHijo(new Nodo(opsuma.toString()));
+                   expresion.agregarHijo(ex2);
+                   RESULT = expresion;
+            :}
+            | EXPRESION:ex OperadorResta:opresta EXPRESION:ex2{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(ex);
+                   expresion.agregarHijo(new Nodo(opresta.toString()));
+                   expresion.agregarHijo(ex2);
+                   RESULT = expresion;
+            :}
+            | EXPRESION:ex OperadorMultiplicacion:opmul EXPRESION:ex2{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(ex);
+                   expresion.agregarHijo(new Nodo(opmul.toString()));
+                   expresion.agregarHijo(ex2);
+                   RESULT = expresion;
+            :}
+            | EXPRESION:ex OperadorDivision:opdiv EXPRESION:ex2{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(ex);
+                   expresion.agregarHijo(new Nodo(opdiv.toString()));
+                   expresion.agregarHijo(ex2);
+                   RESULT = expresion;
+            :}
+            | EXPRESION:ex OperadorMayor:opmayor EXPRESION:ex2{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(ex);
+                   expresion.agregarHijo(new Nodo(opmayor.toString()));
+                   expresion.agregarHijo(ex2);
+                   RESULT = expresion;
+            :}
+            | EXPRESION:ex OperadorMayorIgual:opmayigual EXPRESION:ex2{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(ex);
+                   expresion.agregarHijo(new Nodo(opmayigual.toString()));
+                   expresion.agregarHijo(ex2);
+                   RESULT = expresion;
+            :}
+            | EXPRESION:ex OperadorMenor:opmenor EXPRESION:ex2{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(ex);
+                   expresion.agregarHijo(new Nodo(opmenor.toString()));
+                   expresion.agregarHijo(ex2);
+                   RESULT = expresion;
+            :}
+            | EXPRESION:ex OperadorMenorIgual:opmenigual EXPRESION:ex2{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(ex);
+                   expresion.agregarHijo(new Nodo(opmenigual.toString()));
+                   expresion.agregarHijo(ex2);
+                   RESULT = expresion;
+            :}
+            | EXPRESION:ex OperadorIgual:opigual EXPRESION:ex2{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(ex);
+                   expresion.agregarHijo(new Nodo(opigual.toString()));
+                   expresion.agregarHijo(ex2);
+                   RESULT = expresion;
+            :}
+            | EXPRESION:ex OperadorDiferente:opdif EXPRESION:ex2{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(ex);
+                   expresion.agregarHijo(new Nodo(opdif.toString()));
+                   expresion.agregarHijo(ex2);
+                   RESULT = expresion;
+            :}
+            | EXPRESION:ex OperadorLAnd:opand EXPRESION:ex2{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(ex);
+                   expresion.agregarHijo(new Nodo(opand.toString()));
+                   expresion.agregarHijo(ex2);
+                   RESULT = expresion;
+            :}
+            | EXPRESION:ex OperadorLOr:opor EXPRESION:ex2{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(ex);
+                   expresion.agregarHijo(new Nodo(opor.toString()));
+                   expresion.agregarHijo(ex2);
+                   RESULT = expresion;
+            :}
+            | OperadorLNot:opnot EXPRESION:ex{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(new Nodo(opnot.toString()));
+                   expresion.agregarHijo(ex);
+                   RESULT = expresion;
+            :}
+            | ParentesisApertura:pa EXPRESION:ex ParentesisCierre:pc{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(new Nodo(pa.toString()));
+                   expresion.agregarHijo(ex);
+                   expresion.agregarHijo(new Nodo(pc.toString()));
+                   RESULT = expresion;
+            :}
+            | LITERAL:lit{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(lit);
+                   RESULT = expresion;
+            :}
+            | Identificador:id{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(new Nodo(id.toString()));
+                   RESULT = expresion;
+            :}
+            | Identificador:id OperadorASuma:opasuma EXPRESION:ex{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(new Nodo(id.toString()));
+                   expresion.agregarHijo(new Nodo(opasuma.toString()));
+                   expresion.agregarHijo(ex);
+                   RESULT = expresion;
+            :}
+            | Identificador:id OperadorAResta:opares EXPRESION:ex{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(new Nodo(id.toString()));
+                   expresion.agregarHijo(new Nodo(opares.toString()));
+                   expresion.agregarHijo(ex);
+                   RESULT = expresion;
+            :}
+            | Identificador:id OperadorAMultiplicacion:opamul EXPRESION:ex{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(new Nodo(id.toString()));
+                   expresion.agregarHijo(new Nodo(opamul.toString()));
+                   expresion.agregarHijo(ex);
+                   RESULT = expresion;
+            :}
+            | Identificador:id OperadorADivision:opadiv EXPRESION:ex{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(new Nodo(id.toString()));
+                   expresion.agregarHijo(new Nodo(opadiv.toString()));
+                   expresion.agregarHijo(ex);
+                   RESULT = expresion;
+            :}
+            | Identificador:id OperadorAModulo:opamodu EXPRESION:ex{:
+                   Nodo expresion = new Nodo("Expresion");
+                   expresion.agregarHijo(new Nodo(id.toString()));
+                   expresion.agregarHijo(new Nodo(opamodu.toString()));
+                   expresion.agregarHijo(ex);
+                   RESULT = expresion;
+            :};
 
-LITERAL ::= Numero
-          | CadenaText
-          | CharText
-          | OperadorTrue
-          | OperadorFalse;
+LITERAL ::= Numero:num{:
+                Nodo literal = new Nodo("Literal");
+                literal.agregarHijo(new Nodo(num.toString()));
+                RESULT = literal;
+          :}
+          | CadenaText:cadena{:
+                Nodo literal = new Nodo("Literal");
+                literal.agregarHijo(new Nodo(cadena.toString()));
+                RESULT = literal;
+          :}
+          | CharText:caracter{:
+                Nodo literal = new Nodo("Literal");
+                literal.agregarHijo(new Nodo(caracter.toString()));
+                RESULT = literal;
+          :}
+          | OperadorTrue:optrue{:
+                Nodo literal = new Nodo("Literal");
+                literal.agregarHijo(new Nodo(optrue.toString()));
+                RESULT = literal;
+          :}
+          | OperadorFalse:opfalse{:
+                Nodo literal = new Nodo("Literal");
+                literal.agregarHijo(new Nodo(opfalse.toString()));
+                RESULT = literal;
+          :};

@@ -21,6 +21,7 @@ espacio = [ , \t, \r, \n]+
     }
 %}
 %%
+// Reglas de Patrón-Acción. Las cuales permiten devolver Símbolos para el analizador sintáctico
 int { return new Symbol(sym.TipoInt, yychar, yyline, yytext()); }
 string { return new Symbol(sym.TipoString, yychar, yyline, yytext()); }
 char { return new Symbol(sym.TipoChar, yychar, yyline, yytext()); }

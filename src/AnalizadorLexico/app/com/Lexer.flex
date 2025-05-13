@@ -15,6 +15,7 @@ espacio = [ , \t, \r]+
     public String lexeme;
 %}
 %%
+// Reglas Pátron-Acción. Las cuáles permiten devolver el Token dependiendo del elemento actúal en la entrada
 int | string | char | boolean | double | float { lexeme = yytext(); return TipoDato; }
 if | else { lexeme = yytext(); return InstruccionCondicional; }
 while { lexeme = yytext(); return InstruccionBucle; }

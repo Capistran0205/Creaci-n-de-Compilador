@@ -13,9 +13,9 @@ import java.util.ArrayList;
 public class Nodo {
 
     private ArrayList<Nodo> hijos;
-    private Object etiqueta;
+    private String etiqueta;
 
-    public Nodo(Object etiqueta) {
+    public Nodo(String etiqueta) {
         this.etiqueta = etiqueta;
         this.hijos = new ArrayList<>();
     }
@@ -36,23 +36,10 @@ public class Nodo {
         this.etiqueta = etiqueta;
     }
 
-    public void mostrarArbol(String prefijo) {
-        System.out.println(prefijo + etiqueta);
-        for (Nodo hijo : hijos) {
-            hijo.mostrarArbol(prefijo + "  ");
-        }
+    public void printArbol(Nodo raiz) {
+        System.out.println(raiz.getEtiqueta());
+        for (Nodo hijo : raiz.hijos) {
+            printArbol(hijo);
+        }        
     }
-
-//    public void mostrarArbol(Nodo raiz) {
-//        for (Nodo elemento : raiz.hijos) {
-//            mostrarArbol(elemento);
-//        }
-//        System.out.println(raiz.etiqueta);
-//    }
-//    public void mostrarArbol(Nodo raiz, String indent) {
-//        System.out.println(indent + raiz.getEtiqueta());
-//        for (Nodo hijo : raiz.getHijos()) {
-//            hijo.mostrarArbol(hijo, indent + "  ");
-//        }
-//    }
 }
