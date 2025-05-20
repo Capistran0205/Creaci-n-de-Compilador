@@ -23,11 +23,20 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java_cup.runtime.Symbol;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.JTextPane;
 import javax.swing.filechooser.FileSystemView;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultStyledDocument;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyleContext;
+import javax.swing.text.StyledDocument;
 
 /**
  *
@@ -39,6 +48,16 @@ public class TestLexer extends javax.swing.JFrame {
     Nodo raiz;
     ArbolJGrapht arbol;
     VisualizadorArbol visualizador;
+    // Establecer estilos
+    final StyleContext contenido = StyleContext.getDefaultStyleContext();
+
+    // Colores
+    final AttributeSet dataTypes = contenido.addAttribute(contenido.getEmptySet(), StyleConstants.Foreground, new Color(181, 0, 26));
+    final AttributeSet reserved = contenido.addAttribute(contenido.getEmptySet(), StyleConstants.Foreground, new Color(127, 0, 255));
+    final AttributeSet numbers = contenido.addAttribute(contenido.getEmptySet(), StyleConstants.Foreground, new Color(212, 175, 55));
+    final AttributeSet strings = contenido.addAttribute(contenido.getEmptySet(), StyleConstants.Foreground, new Color(0, 143, 57));
+    final AttributeSet character = contenido.addAttribute(contenido.getEmptySet(), StyleConstants.Foreground, new Color(65, 105, 225));
+    final AttributeSet normal = contenido.addAttribute(contenido.getEmptySet(), StyleConstants.Foreground, new Color(0, 0, 0));
 
     /**
      * Creates new form TestLexer
@@ -50,6 +69,7 @@ public class TestLexer extends javax.swing.JFrame {
         this.setLocationRelativeTo(null);
         this.setSize(new Dimension(820, 440));
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.applyColors();
     }
 
     /**
@@ -62,10 +82,8 @@ public class TestLexer extends javax.swing.JFrame {
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        jTxtCodigoFuente = new javax.swing.JTextArea();
         jLabel1 = new javax.swing.JLabel();
-        jBtnAnalizar = new javax.swing.JButton();
+        jBtnAnalizadorLexico = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTxtValidacionTokens = new javax.swing.JTextArea();
         jBtnLimpiar = new javax.swing.JButton();
@@ -76,27 +94,23 @@ public class TestLexer extends javax.swing.JFrame {
         jTxtValidacionSintactico = new javax.swing.JTextArea();
         jBtnCargarCodigo = new javax.swing.JButton();
         jChCodigoFuente = new javax.swing.JCheckBox();
+        jScrollPane4 = new javax.swing.JScrollPane();
+        jTxtCodigoFuente = new javax.swing.JTextPane();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jPanel1.setBackground(new java.awt.Color(65, 105, 225));
 
-        jTxtCodigoFuente.setEditable(false);
-        jTxtCodigoFuente.setColumns(20);
-        jTxtCodigoFuente.setFont(new java.awt.Font("Consolas", 0, 12)); // NOI18N
-        jTxtCodigoFuente.setRows(5);
-        jScrollPane1.setViewportView(jTxtCodigoFuente);
-
         jLabel1.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         jLabel1.setText("Código Fuente:");
 
-        jBtnAnalizar.setBackground(new java.awt.Color(144, 238, 144));
-        jBtnAnalizar.setForeground(new java.awt.Color(0, 0, 0));
-        jBtnAnalizar.setText("Analizador Léxico");
-        jBtnAnalizar.addActionListener(new java.awt.event.ActionListener() {
+        jBtnAnalizadorLexico.setBackground(new java.awt.Color(144, 238, 144));
+        jBtnAnalizadorLexico.setForeground(new java.awt.Color(0, 0, 0));
+        jBtnAnalizadorLexico.setText("Analizador Léxico");
+        jBtnAnalizadorLexico.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jBtnAnalizarActionPerformed(evt);
+                jBtnAnalizadorLexicoActionPerformed(evt);
             }
         });
 
@@ -152,6 +166,8 @@ public class TestLexer extends javax.swing.JFrame {
             }
         });
 
+        jScrollPane4.setViewportView(jTxtCodigoFuente);
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -169,11 +185,11 @@ public class TestLexer extends javax.swing.JFrame {
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 112, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 292, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 292, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(18, 18, 18)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                     .addComponent(jBtnSintactico, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jBtnAnalizar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jBtnAnalizadorLexico, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(jBtnLimpiar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(jBtnCargarCodigo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
                         .addGap(18, 18, 18)
@@ -191,16 +207,16 @@ public class TestLexer extends javax.swing.JFrame {
                     .addComponent(jLabel2))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jScrollPane1)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jBtnAnalizar, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jBtnAnalizadorLexico, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(24, 24, 24)
                         .addComponent(jBtnSintactico, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(18, 18, 18)
                         .addComponent(jBtnLimpiar, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(18, 18, 18)
                         .addComponent(jBtnCargarCodigo, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 244, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 244, Short.MAX_VALUE)
+                    .addComponent(jScrollPane4))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel3)
@@ -215,7 +231,7 @@ public class TestLexer extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jBtnAnalizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnAnalizarActionPerformed
+    private void jBtnAnalizadorLexicoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnAnalizadorLexicoActionPerformed
         File file = new File("Prueba.txt");
 
 // Guardar el contenido del JTextArea en un archivo
@@ -383,7 +399,7 @@ public class TestLexer extends javax.swing.JFrame {
             Logger.getLogger(TestLexer.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-    }//GEN-LAST:event_jBtnAnalizarActionPerformed
+    }//GEN-LAST:event_jBtnAnalizadorLexicoActionPerformed
 
     private void jBtnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnLimpiarActionPerformed
         this.jTxtCodigoFuente.setText(null);
@@ -394,38 +410,73 @@ public class TestLexer extends javax.swing.JFrame {
     }//GEN-LAST:event_jBtnLimpiarActionPerformed
 
     private void jBtnSintacticoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnSintacticoActionPerformed
-        String ST = jTxtCodigoFuente.getText();
-        Syntax s = new Syntax(new LexerCup(new StringReader(ST)));
-        try {         
-            s.parse();
-//            raiz = (Nodo)s.parse().value;
-//            raiz.printArbol(raiz);
-//            arbol = new ArbolJGrapht();
-//            arbol.construirGrafo(raiz);
-//            visualizador = new VisualizadorArbol(arbol.getGrafo());
-//            visualizador.mostrar();            
-            this.jTxtValidacionSintactico.setText("Análisis realizado correctamente");
-            this.jTxtValidacionSintactico.setForeground(new Color(8, 101, 34));
-        } catch (Exception ex) {
-            Symbol sym = s.getS();
-            this.jTxtValidacionSintactico.setText("Error de sintaxis. En la linea: " + (sym.right + 1) + " Columna: " + (sym.left + 1) + ", Texto: \"" + sym.value + "\"");
+        try {
+            // Leer el archivo con try-with-resources
+            File file = new File("Prueba.txt"); // Puedes cambiar esta ruta si lo deseas
+
+            // Guardar el contenido del JTextArea en un archivo
+            try (PrintWriter escribir = new PrintWriter(file)) {
+                escribir.print(this.jTxtCodigoFuente.getText());
+            } catch (FileNotFoundException ex) {
+                Logger.getLogger(TestLexer.class.getName()).log(Level.SEVERE, null, ex);
+                return; // No continuamos si no pudimos escribir el archivo
+            }
+
+            StringBuilder contenido = new StringBuilder();
+            // Lecutra del archivo para pasarlo al parser
+            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                String linea;
+                while ((linea = br.readLine()) != null) {
+                    contenido.append(linea).append("\n"); // Preservamos saltos de línea
+                }
+            }
+            String ST = contenido.toString();
+            // Instancia de la clase Syntax para el análisis sintáctico
+            Syntax s = new Syntax(new LexerCup(new StringReader(ST)));
+
+            try {
+                // Activación del análisis sintáctico
+                s.parse();
+//                raiz = (Nodo) s.parse().value;
+//                raiz.printArbol(raiz);
+//                arbol = new ArbolJGrapht();
+//                arbol.construirGrafo(raiz);
+//                visualizador = new VisualizadorArbol(arbol.getGrafo());
+//                visualizador.mostrar();
+                this.jTxtValidacionSintactico.setText("Análisis realizado correctamente");
+                this.jTxtValidacionSintactico.setForeground(new Color(8, 101, 34));
+            } catch (Exception ex) {
+                Symbol sym = s.getS();
+                this.jTxtValidacionSintactico.setText("Error de sintaxis. En la linea: " + (sym.right + 1) + " Columna: " + (sym.left + 1) + ", Texto: \"" + sym.value + "\"");
+                this.jTxtValidacionSintactico.setForeground(Color.red);
+            }
+
+        } catch (IOException e) {
+            // Manejo de errores si no se puede leer el archivo
+            this.jTxtValidacionSintactico.setText("Error al leer el archivo: " + e.getMessage());
             this.jTxtValidacionSintactico.setForeground(Color.red);
         }
+
     }//GEN-LAST:event_jBtnSintacticoActionPerformed
 
     private void jBtnCargarCodigoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnCargarCodigoActionPerformed
+        // Objeto JFileChooser para seleccionar y abrir el código fuente
         JFileChooser chooser = new JFileChooser(FileSystemView.getFileSystemView());
         int opcion = chooser.showOpenDialog(this);
+
         if (opcion == JFileChooser.APPROVE_OPTION) {
             File archivo = chooser.getSelectedFile();
             this.jTxtCodigoFuente.setEditable(false);
+
+            StyledDocument doc = jTxtCodigoFuente.getStyledDocument();
             try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
-                this.jTxtCodigoFuente.setText(""); // Limpiar antes de mostrar nuevo contenido
+                doc.remove(0, doc.getLength()); // Limpiar el contenido anterior
                 String linea;
                 while ((linea = br.readLine()) != null) {
-                    this.jTxtCodigoFuente.append(linea + "\n");
+                    doc.insertString(doc.getLength(), linea + "\n", null); // Agregar cada línea al final
                 }
-            } catch (IOException ex) {
+                applyColors();
+            } catch (IOException | BadLocationException ex) {
                 JOptionPane.showMessageDialog(this, "Error al leer el archivo:\n" + ex.getMessage(),
                         "Error", JOptionPane.ERROR_MESSAGE);
             }
@@ -475,7 +526,7 @@ public class TestLexer extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jBtnAnalizar;
+    private javax.swing.JButton jBtnAnalizadorLexico;
     private javax.swing.JButton jBtnCargarCodigo;
     private javax.swing.JButton jBtnLimpiar;
     private javax.swing.JButton jBtnSintactico;
@@ -484,12 +535,140 @@ public class TestLexer extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
-    private javax.swing.JTextArea jTxtCodigoFuente;
+    private javax.swing.JScrollPane jScrollPane4;
+    private javax.swing.JTextPane jTxtCodigoFuente;
     private javax.swing.JTextArea jTxtValidacionSintactico;
     private javax.swing.JTextArea jTxtValidacionTokens;
     // End of variables declaration//GEN-END:variables
 
+    private void applyColors() {
+        // Aplicar estilos al documento
+        DefaultStyledDocument doc = new DefaultStyledDocument() {
+            @Override
+            public void insertString(int offSet, String str, AttributeSet a) throws BadLocationException {
+                super.insertString(offSet, str, a);
+                applySyntaxHighlighting(this);
+            }
+
+            @Override
+            public void remove(int offSet, int len) throws BadLocationException {
+                super.remove(offSet, len);
+                applySyntaxHighlighting(this);
+            }
+        };
+
+        // Aplicar el documento al JTextPane
+        JTextPane txt = new JTextPane(doc);
+        String temp = this.jTxtCodigoFuente.getText();
+        this.jTxtCodigoFuente.setStyledDocument(txt.getStyledDocument());
+        this.jTxtCodigoFuente.setText(temp);
+
+        // Aplicar resaltado de sintaxis
+        applySyntaxHighlighting(doc);
+    }
+
+    // Método para aplicar el estilo a las palabras reservadas, tipos de datos y números
+    private void applySyntaxHighlighting(StyledDocument doc) {
+        try {
+            // Obtener todo el texto del documento
+            String text = doc.getText(0, doc.getLength());
+
+            // PASO 1: Resetear todo el texto al estilo normal
+            // Esto limpia cualquier formato previo antes de aplicar los nuevos estilos
+            doc.setCharacterAttributes(0, doc.getLength(), normal, true);
+
+            // PASO 2: Crear patrones de expresiones regulares para identificar cada elemento
+            Pattern stringPattern = Pattern.compile("\"([^\"\\\\]|\\\\.)*\"");    // Cadenas: "texto"
+            Pattern charPattern = Pattern.compile("'([^'\\\\]|\\\\.)'");          // Caracteres: 'c'
+            Pattern reservedPattern = Pattern.compile("\\b(main|Finish|cin|cout|while|if|else)\\b");  // Palabras reservadas
+            Pattern dataTypesPattern = Pattern.compile("\\b(int|string|char|float|double|boolean)\\b"); // Tipos de datos
+            Pattern numbersPattern = Pattern.compile("\\b-?\\d+(\\.\\d+)?\\b");   // Números enteros y decimales
+
+            // PASO 3: Aplicar estilos por ORDEN DE PRIORIDAD
+            // ⚠️ IMPORTANTE: Primero cadenas y caracteres, después el resto
+            // Esto evita que palabras dentro de cadenas se coloreen incorrectamente
+            // 1. Aplicar estilo a cadenas (comillas dobles) - PRIORIDAD ALTA
+            Matcher stringMatcher = stringPattern.matcher(text);
+            while (stringMatcher.find()) {
+                int start = stringMatcher.start();           // Posición donde inicia la cadena
+                int length = stringMatcher.end() - start;    // Longitud de la cadena
+                doc.setCharacterAttributes(start, length, strings, false);  // Aplicar estilo verde
+            }
+
+            // 2. Aplicar estilo a caracteres (comillas simples) - PRIORIDAD ALTA
+            Matcher charMatcher = charPattern.matcher(text);
+            while (charMatcher.find()) {
+                int start = charMatcher.start();
+                int length = charMatcher.end() - start;
+                doc.setCharacterAttributes(start, length, character, false);  // Aplicar estilo azul
+            }
+
+            // 3. Aplicar estilo a palabras reservadas - PRIORIDAD BAJA
+            // ⚠️ CLAVE: Verificamos que NO estén dentro de cadenas o caracteres
+            Matcher reservedMatcher = reservedPattern.matcher(text);
+            while (reservedMatcher.find()) {
+                int start = reservedMatcher.start();
+                int length = reservedMatcher.end() - start;
+
+                // 🔍 VERIFICACIÓN IMPORTANTE: ¿Está dentro de una cadena o carácter?
+                if (!isInsideStringOrChar(text, start, stringPattern, charPattern)) {
+                    doc.setCharacterAttributes(start, length, reserved, false);
+                }
+            }
+
+            // 4. Aplicar estilo a tipos de datos - PRIORIDAD BAJA
+            Matcher dataTypesMatcher = dataTypesPattern.matcher(text);
+            while (dataTypesMatcher.find()) {
+                int start = dataTypesMatcher.start();
+                int length = dataTypesMatcher.end() - start;
+
+                // 🔍 Misma verificación: no colorear si está dentro de cadenas
+                if (!isInsideStringOrChar(text, start, stringPattern, charPattern)) {
+                    doc.setCharacterAttributes(start, length, dataTypes, false);
+                }
+            }
+
+            // 5. Aplicar estilo a números - PRIORIDAD BAJA
+            Matcher numbersMatcher = numbersPattern.matcher(text);
+            while (numbersMatcher.find()) {
+                int start = numbersMatcher.start();
+                int length = numbersMatcher.end() - start;
+
+                // 🔍 Misma verificación para números
+                if (!isInsideStringOrChar(text, start, stringPattern, charPattern)) {
+                    doc.setCharacterAttributes(start, length, numbers, false);
+                }
+            }
+
+        } catch (BadLocationException e) {
+            System.err.println(e.getMessage());
+        }
+    }
+    // 🔧 MÉTODO AUXILIAR CLAVE: Verifica si una posición está dentro de una cadena o carácter
+    // Esto previene colorear palabras que están dentro de cadenas
+
+    private boolean isInsideStringOrChar(String text, int position, Pattern stringPattern, Pattern charPattern) {
+
+        // Verificar si la posición está dentro de una cadena "..."
+        Matcher stringMatcher = stringPattern.matcher(text);
+        while (stringMatcher.find()) {
+            // Si la posición está entre el inicio y fin de una cadena
+            if (position >= stringMatcher.start() && position < stringMatcher.end()) {
+                return true;  // Sí está dentro de una cadena
+            }
+        }
+
+        // Verificar si la posición está dentro de un carácter '...'
+        Matcher charMatcher = charPattern.matcher(text);
+        while (charMatcher.find()) {
+            // Si la posición está entre el inicio y fin de un carácter
+            if (position >= charMatcher.start() && position < charMatcher.end()) {
+                return true;  // Sí está dentro de un carácter
+            }
+        }
+
+        return false;  // No está dentro de ninguna cadena o carácter
+    }
 }
