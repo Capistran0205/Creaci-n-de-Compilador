@@ -1,31 +1,60 @@
 package AnalizadorSintactico.app.com;
 import java_cup.runtime.Symbol;
 import AAS.app.com.Nodo;
+import java.util.List;
+import java.util.ArrayList;
 
 parser code
 {: 
     private Symbol s;
+    private List<String> errores = new ArrayList<>();
 
-    public void syntax_error(Symbol s){
+    public void syntax_error(Symbol s) {
         this.s = s;
     }
 
-    public Symbol getS(){
+    public Symbol getS() {
         return this.s;
     }
 
+    public List<String> getErrores() {
+        return this.errores;
+    }
+
     public void report_error(String message, Object info) {
-        StringBuilder m = new StringBuilder("Error");
+        StringBuilder m = new StringBuilder("Error sintáctico");
+        
         if (info instanceof Symbol) {
             Symbol s = (Symbol) info;
-            if (s.left >= 0) {                
-                m.append("en la linea "+(s.left+1));   
-                if (s.right >= 0)                    
-                    m.append(", columna "+(s.right+1));
+            if (s.left >= 0) {                 
+                m.append(" en la línea ").append(s.left + 1);   
+                if (s.right >= 0) {                     
+                    m.append(", columna ").append(s.right + 1);
+                }
+            }
+            
+            // Agregar información sobre el token si está disponible
+            if (s.value != null) {
+                m.append(" cerca de '").append(s.value).append("'");
             }
         }
-        m.append(" : "+message);
-        System.err.println(m);
+        
+        m.append(": ").append(message);
+        errores.add(m.toString());
+        
+        // Opcional: imprimir en consola para debugging
+        // System.err.println(m);
+    }
+
+    public void report_fatal_error(String message, Object info) {
+        report_error("Error fatal - " + message, info);
+        // No lanzar excepción aquí para permitir que se recopilen más errores
+    }
+
+    // Método para agregar errores personalizados
+    public void agregarError(String mensaje, int linea, int columna) {
+        String error = String.format("Error en línea %d, columna %d: %s", linea + 1, columna + 1, mensaje);
+        errores.add(error);
     }
 :};
 
