@@ -23,8 +23,7 @@ public class Main {
         // Ruta del archivo .flex que contiene las reglas del analizador léxico
         String ruta = "C:/Users/capis/OneDrive/Documentos/NetBeansProjects/Compilador/src/AnalizadorLexico/app/com/Lexer.flex"; // Para el lexer
         String ruta1 = "C:/Users/capis/OneDrive/Documentos/NetBeansProjects/Compilador/src/AnalizadorSintactico/app/com/LexerCup.flex"; // Lexer para el sintáctico
-        String[] rutasS = {"-parser", "Syntax", "C:/Users/capis/OneDrive/Documentos/NetBeansProjects/Compilador/src/AnalizadorSintactico/app/com/Syntax.cup"
-        };
+        String[] rutasS = {"-parser", "Syntax", "C:/Users/capis/OneDrive/Documentos/NetBeansProjects/Compilador/src/AnalizadorSintactico/app/com/Syntax.cup"};
         // generarLex(ruta);
         generarLexAndCup(ruta1, rutasS);
     }

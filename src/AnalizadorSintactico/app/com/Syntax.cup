@@ -1,65 +1,197 @@
+/* Archivo Syntax.cup
+   Declaración del paquete donde se alojara el parser
+   Se importa la clase Symbol de CUP, que representa los tokens recibidos desde el lexer
+   También se importan la clase Nodo para construcción del AAS
+   Además, la clase ArrayList y la interface List propias de java para el listado de los errores que detecte el parser
+*/
 package AnalizadorSintactico.app.com;
 import java_cup.runtime.Symbol;
 import AAS.app.com.Nodo;
 import java.util.List;
 import java.util.ArrayList;
 
+/* Código de acción para manejo de errores */
+action code {:
+    // SISTEMA UNIFICADO DE ERRORES - Solo métodos estáticos
+    public static List<String> errores = new ArrayList<>();
+    public static int contadorErrores = 0;
+    
+    // Método principal para reportar errores sintácticos
+    public static void reportarError(String mensaje, int linea, int columna) {
+        contadorErrores++;
+        String error = String.format("Error sintáctico #%d en línea %d, columna %d: %s", 
+                                    contadorErrores, linea + 1, columna + 1, mensaje);
+        errores.add(error);
+        System.err.println(error);
+    }
+    
+    // Método para reportar errores con Symbol
+    public static void reportarErrorConSymbol(String mensaje, Symbol s) {
+        contadorErrores++;
+        StringBuilder errorMsg = new StringBuilder();
+        errorMsg.append("Error sintáctico #").append(contadorErrores);
+        
+        if (s != null) {
+            if (s.left >= 0) {
+                errorMsg.append(" en línea ").append(s.left + 1);
+                if (s.right >= 0) {
+                    errorMsg.append(", columna ").append(s.right + 1);
+                }
+            }
+            if (s.value != null) {
+                errorMsg.append(" cerca del token: '").append(s.value).append("'");
+            }
+        }
+        
+        errorMsg.append(" - ").append(mensaje);
+        
+        String error = errorMsg.toString();
+        errores.add(error);
+        System.err.println(error);
+    }
+    
+    // Método para reportar errores léxicos
+    public static void reportarErrorLexico(String lexema, int linea, int columna) {
+        contadorErrores++;
+        String error = String.format("Error léxico #%d en línea %d, columna %d: Token no reconocido '%s'", 
+                                    contadorErrores, linea + 1, columna + 1, lexema);
+        errores.add(error);
+        System.err.println(error);
+    }
+    
+    // Método para limpiar la lista de errores
+    public static void limpiarErrores() {
+        errores.clear();
+        contadorErrores = 0;
+    }
+    
+    // Método para verificar si hay errores
+    public static boolean hayErrores() {
+        return !errores.isEmpty();
+    }
+    
+    // Método para obtener todos los errores EN ORDEN
+    public static List<String> obtenerErrores() {
+        return new ArrayList<>(errores);
+    }
+
+    // Método para agregar errores sin duplicaciones
+    public static void agregarError(String mensaje) {
+        if (!errores.contains(mensaje)) {
+            errores.add(mensaje);
+        }
+    }
+:}
+
+// Parser con manejo de errores mejorado
 parser code
 {: 
     private Symbol s;
     private List<String> errores = new ArrayList<>();
+    private List<Symbol> simbolosError = new ArrayList<>();
+    private boolean modoRecuperacion = false;
+    private int contadorErrores = 0;
 
-    public void syntax_error(Symbol s) {
-        this.s = s;
+    // Método para manejar errores sintácticos
+    public void syntax_error(Symbol cur_token) {
+        this.s = cur_token;
+        if (cur_token != null) {
+            simbolosError.add(cur_token);
+        }
+        modoRecuperacion = true;
     }
 
+    // Obtener la lista de simbolos (ordenada por posición)
+    public List<Symbol> getSimbolosError() {
+        simbolosError.sort((s1, s2) -> {
+            if (s1.left != s2.left) {
+                return Integer.compare(s1.left, s2.left);
+            }
+            return Integer.compare(s1.right, s2.right);
+        });
+        return simbolosError;
+    }
+
+    // Obtener el último símbolo de error
     public Symbol getS() {
         return this.s;
     }
 
+    // Obtener la lista de errores sintácticos (ordenados)
     public List<String> getErrores() {
         return this.errores;
     }
 
+    // Reportar errores sintácticos con mejor detalle y posición correcta
     public void report_error(String message, Object info) {
-        StringBuilder m = new StringBuilder("Error sintáctico");
+        StringBuilder mensajeError = new StringBuilder();
+        contadorErrores++;
         
-        if (info instanceof Symbol) {
-            Symbol s = (Symbol) info;
-            if (s.left >= 0) {                 
-                m.append(" en la línea ").append(s.left + 1);   
-                if (s.right >= 0) {                     
-                    m.append(", columna ").append(s.right + 1);
+        Symbol simboloError = null;
+        if (info != null && info instanceof Symbol) {
+            simboloError = (Symbol) info;
+        } else if (this.s != null) {
+            simboloError = this.s;
+        }
+        
+        if (simboloError != null) {
+            mensajeError.append("Error sintáctico: ").append(contadorErrores);
+            
+            int linea = simboloError.left + 1;
+            int columna = simboloError.right + 1;
+            
+            if (simboloError.left >= 0) {
+                mensajeError.append(" en línea ").append(linea);
+                if (simboloError.right >= 0) {
+                    mensajeError.append(", columna ").append(columna);
                 }
             }
             
-            // Agregar información sobre el token si está disponible
-            if (s.value != null) {
-                m.append(" cerca de '").append(s.value).append("'");
+            if (simboloError.value != null && !simboloError.value.toString().isEmpty()) {
+                mensajeError.append(" cerca del token: '").append(simboloError.value).append("'");
             }
+            
+            mensajeError.append(" - ").append(message);
+        } else {
+            mensajeError.append("Error sintáctico #").append(contadorErrores);
+            mensajeError.append(": ").append(message);
         }
         
-        m.append(": ").append(message);
-        errores.add(m.toString());
-        
-        // Opcional: imprimir en consola para debugging
-        // System.err.println(m);
+        String errorMsg = mensajeError.toString();
+        agregarError(errorMsg);
+        System.err.println(errorMsg);
     }
 
+    // Reportar errores fatales sin detener completamente
     public void report_fatal_error(String message, Object info) {
-        report_error("Error fatal - " + message, info);
-        // No lanzar excepción aquí para permitir que se recopilen más errores
+        report_error("Error fatal: " + message, info);
     }
 
-    // Método para agregar errores personalizados
-    public void agregarError(String mensaje, int linea, int columna) {
-        String error = String.format("Error en línea %d, columna %d: %s", linea + 1, columna + 1, mensaje);
-        errores.add(error);
+    // Método para agregar errores sin duplicaciones y mantener orden
+    public void agregarError(String mensaje) {
+        if (!errores.contains(mensaje)) {
+            errores.add(mensaje);
+        }
+    }
+    
+    // Método para recuperación después del error
+    public void done_parsing() {
+        if (modoRecuperacion && !errores.isEmpty()) {
+            System.err.println("\n== RESUMEN DE ERRORES SINTÁCTICOS ==");
+            System.err.println("Total de errores encontrados: " + errores.size());
+            
+            for (int i = 0; i < errores.size(); i++) {
+                System.err.println((i + 1) + ". " + errores.get(i));
+            }
+            System.err.println("==================================\n");
+        }
+        super.done_parsing();
     }
 :};
 
+
 terminal TipoInt, TipoString, TipoChar, TipoBoolean, TipoDouble, TipoFloat;
-terminal InicioPrograma, EntradaInfo, OperadorEntrada, SalidaInfo, OperadorSalida, SaltoLinea;
+terminal InicioPrograma, EntradaInfo, OperadorEntrada, SalidaInfo, OperadorSalida, SaltoLinea, Linea;
 terminal CadenaText, CharText, ConcatenacionText;
 terminal ParentesisApertura, ParentesisCierre, LlaveApertura, LlaveCierre;
 terminal CorcheteApertura, CorcheteCierre, Separador, OperadorAsignacion;
@@ -76,6 +208,7 @@ terminal Numero, FinLinea, FinPrograma;
 terminal ERROR;
 
 non terminal Nodo PROGRAMA, DECLARACION, LISTA_DECLARACIONES, DECLARACION_SIMPLE, INSTRUCCION, INSTRUCCIONES;
+non terminal Nodo BLOQUE_ERROR, BLOQUE_INSTRUCCIONES;
 non terminal Nodo INSTRUCCION_CIN, INSTRUCCION_COUT, INSTRUCCION_CONDICIONAL, INSTRUCCION_WHILE;
 non terminal Nodo INCREMENTO, DECREMENTO, EXPRESION, CONCATENAR, TIPO, LITERAL, ASIGNACION;
 
@@ -85,96 +218,205 @@ precedence nonassoc OperadorIgual, OperadorDiferente;
 precedence nonassoc OperadorMayor, OperadorMenor, OperadorMayorIgual, OperadorMenorIgual;
 precedence left OperadorSuma, OperadorResta;
 precedence left OperadorMultiplicacion, OperadorDivision;
-precedence right OperadorLNot, OperadorAsignacion;
-precedence left ERROR;
+precedence right OperadorLNot, OperadorAsignacion, OperadorASuma, OperadorAResta, OperadorAMultiplicacion, OperadorADivision, OperadorAModulo;
 
 start with PROGRAMA;
-
-PROGRAMA ::= TipoInt:integer InicioPrograma:m ParentesisApertura:pa ParentesisCierre:pc LlaveApertura:lla INSTRUCCIONES:ins LlaveCierre:llc{:
+// Bloque de programa principal de Infinix
+PROGRAMA ::=
+            TipoInt:integer InicioPrograma:m ParentesisApertura:pa ParentesisCierre:pc BLOQUE_INSTRUCCIONES:bloq
+            {:
                 Nodo programa = new Nodo("Programa");
                 programa.agregarHijo(new Nodo(integer.toString()));
                 programa.agregarHijo(new Nodo(m.toString()));
                 programa.agregarHijo(new Nodo(pa.toString()));
                 programa.agregarHijo(new Nodo(pc.toString()));
-                programa.agregarHijo(new Nodo(lla.toString()));
-                programa.agregarHijo(ins);
-                programa.agregarHijo(new Nodo(llc.toString()));
+                programa.agregarHijo(bloq);
                 RESULT = programa;
-           :};
+            :}
+            // Error: falta declaración main pero hay bloque
+          | error:e BLOQUE_INSTRUCCIONES:bloq
+            {:
+                parser.report_error("falta declaración de función main 'int main()'", e);
+            :}
+            // Error: main declarado pero bloque con errores
+          | TipoInt:integer InicioPrograma:m ParentesisApertura:pa ParentesisCierre:pc BLOQUE_ERROR:bloq
+            {:
+                Nodo programa = new Nodo("Programa");
+                programa.agregarHijo(new Nodo(integer.toString()));
+                programa.agregarHijo(new Nodo(m.toString()));
+                programa.agregarHijo(new Nodo(pa.toString()));
+                programa.agregarHijo(new Nodo(pc.toString()));
+                programa.agregarHijo(bloq);
+                RESULT = programa;
+            :}
+            // Error: faltan paréntesis en main
+          | TipoInt:integer InicioPrograma:m error:e BLOQUE_INSTRUCCIONES:bloq
+            {:
+                parser.report_error("faltan paréntesis en declaración main '()'", e);
+            :}
+            // Error: estructura de programa inválida
+          | error:e
+            {:
+                parser.report_error("estructura de programa inválida", e);
+            :};
 
-INSTRUCCIONES ::= INSTRUCCIONES:ins INSTRUCCION:in{:
-                    Nodo instrucciones = new Nodo("Instrucciones");
-                    instrucciones.agregarHijo(ins);
-                    instrucciones.agregarHijo(in);
-                    RESULT = instrucciones;
-                :}                
-                | INSTRUCCION:in{:
-                    Nodo instrucciones = new Nodo("Instrucciones");
-                    instrucciones.agregarHijo(in);
-                    RESULT = instrucciones;
-                :};
+// Bloque de instrucciones con mejor manejo de errores
+BLOQUE_INSTRUCCIONES ::=
+            LlaveApertura:lla INSTRUCCIONES:ins LlaveCierre:llc
+            {:
+                Nodo bloque = new Nodo("Bloque");
+                bloque.agregarHijo(new Nodo(lla.toString()));
+                bloque.agregarHijo(ins);
+                bloque.agregarHijo(new Nodo(llc.toString()));
+                RESULT = bloque;
+            :}
+            // Error: falta llave de apertura
+          | error:e INSTRUCCIONES:ins LlaveCierre:llc
+            {:
+                parser.report_error("falta llave de apertura '{' en bloque", e);
+            :}
+            // Error: falta llave de cierre
+          | LlaveApertura:lla INSTRUCCIONES:ins error:e
+            {:
+                parser.report_error("falta llave de cierre '}' en bloque", e);
+            :};
 
-INSTRUCCION ::= DECLARACION:dec FinLinea:fnl{:
-                    Nodo instruccion = new Nodo("Instruccion");
-                    instruccion.agregarHijo(dec);
-                    instruccion.agregarHijo(new Nodo(fnl.toString()));
-                    RESULT = instruccion;
-              :}
-              | ASIGNACION:asign FinLinea:fnl{:
-                    Nodo instruccion = new Nodo("Instruccion");
-                    instruccion.agregarHijo(asign);
-                    instruccion.agregarHijo(new Nodo(fnl.toString()));
-                    RESULT = instruccion;
-              :}
-              | INCREMENTO:inc FinLinea:fnl{:
-                    Nodo instruccion = new Nodo("Instruccion");
-                    instruccion.agregarHijo(inc);
-                    instruccion.agregarHijo(new Nodo(fnl.toString()));
-                    RESULT = instruccion;
-              :}
-              | DECREMENTO:dec FinLinea:fnl{:
-                    Nodo instruccion = new Nodo("Instruccion");
-                    instruccion.agregarHijo(dec);
-                    instruccion.agregarHijo(new Nodo(fnl.toString()));
-                    RESULT = instruccion;
-              :}
-              | INSTRUCCION_COUT:inscout FinLinea:fnl{:
-                    Nodo instruccion = new Nodo("Instruccion");
-                    instruccion.agregarHijo(inscout);
-                    instruccion.agregarHijo(new Nodo(fnl.toString()));
-                    RESULT = instruccion;
-              :}
-              | INSTRUCCION_CIN:inscin FinLinea:fnl{:
-                    Nodo instruccion = new Nodo("Instruccion");
-                    instruccion.agregarHijo(inscin);
-                    instruccion.agregarHijo(new Nodo(fnl.toString()));
-                    RESULT = instruccion;
-              :}
-              | INSTRUCCION_CONDICIONAL:inscondi{:
-                    Nodo instruccion = new Nodo("Instruccion");
-                    instruccion.agregarHijo(inscondi);                   
-                    RESULT = instruccion;
-              :}
-              | INSTRUCCION_WHILE:inswhile{:
-                    Nodo instruccion = new Nodo("Instruccion");
-                    instruccion.agregarHijo(inswhile);                   
-                    RESULT = instruccion;
-              :}
-              | FinPrograma:fnpro Numero:num FinLinea:fnl{:
-                    Nodo instruccion = new Nodo("Instruccion");
-                    instruccion.agregarHijo(new Nodo(fnpro.toString()));                
-                    instruccion.agregarHijo(new Nodo(num.toString()));                
-                    instruccion.agregarHijo(new Nodo(fnl.toString()));                
-                    RESULT = instruccion;
-              :};
+// Bloque de error específico
+BLOQUE_ERROR ::=
+            LlaveApertura:lla error:e
+            {:
+                parser.report_error("error en contenido del bloque o falta llave de cierre '}'", e);
+            :}
+          | error:e LlaveCierre:llc
+            {:
+                parser.report_error("falta llave de apertura '{' en bloque", e);
+            :};
 
+// Definición de instrucciones
+INSTRUCCIONES ::= 
+            INSTRUCCIONES:ins INSTRUCCION:in
+            {:
+                Nodo instrucciones = new Nodo("Instrucciones");
+                instrucciones.agregarHijo(ins);
+                instrucciones.agregarHijo(in);
+                RESULT = instrucciones;
+            :}                
+          | INSTRUCCION:in
+            {:
+                Nodo instrucciones = new Nodo("Instrucciones");
+                instrucciones.agregarHijo(in);
+                RESULT = instrucciones;
+            :}
+            // Error en una instrucción - continuar con las siguientes
+          | INSTRUCCIONES:ins error:e FinLinea:fnl
+            {:
+                parser.report_error("error en declaración de instrucción - revisar sintaxis", e);
+            :};
+
+/* Definición de reglas para instrucciones de declaración y asignación de variables con sus respectivos manejos de errores.
+   Además, de las declaraciones de bucle while y condicionales if-else
+*/
+INSTRUCCION ::=
+        DECLARACION:dec FinLinea:fnl
+        {:
+            Nodo instruccion = new Nodo("Instruccion");
+            instruccion.agregarHijo(dec);
+            instruccion.agregarHijo(new Nodo(fnl.toString()));
+            RESULT = instruccion;
+        :}
+      | ASIGNACION:asign FinLinea:fnl
+        {:
+            Nodo instruccion = new Nodo("Instruccion");
+            instruccion.agregarHijo(asign);
+            instruccion.agregarHijo(new Nodo(fnl.toString()));
+            RESULT = instruccion;
+        :}
+      | INCREMENTO:inc FinLinea:fnl
+        {:
+            Nodo instruccion = new Nodo("Instruccion");
+            instruccion.agregarHijo(inc);
+            instruccion.agregarHijo(new Nodo(fnl.toString()));
+            RESULT = instruccion;
+        :}
+      | DECREMENTO:dec FinLinea:fnl
+        {:
+            Nodo instruccion = new Nodo("Instruccion");
+            instruccion.agregarHijo(dec);
+            instruccion.agregarHijo(new Nodo(fnl.toString()));
+            RESULT = instruccion;
+        :}
+      | INSTRUCCION_COUT:inscout FinLinea:fnl
+        {:
+            Nodo instruccion = new Nodo("Instruccion");
+            instruccion.agregarHijo(inscout);
+            instruccion.agregarHijo(new Nodo(fnl.toString()));
+            RESULT = instruccion;
+        :}
+      | INSTRUCCION_CIN:inscin FinLinea:fnl
+        {:
+            Nodo instruccion = new Nodo("Instruccion");
+            instruccion.agregarHijo(inscin);
+            instruccion.agregarHijo(new Nodo(fnl.toString()));
+            RESULT = instruccion;
+        :}
+      | INSTRUCCION_CONDICIONAL:inscondi
+        {:
+            Nodo instruccion = new Nodo("Instruccion");
+            instruccion.agregarHijo(inscondi);
+            RESULT = instruccion;
+        :}
+      | INSTRUCCION_WHILE:inswhile
+        {:
+            Nodo instruccion = new Nodo("Instruccion");
+            instruccion.agregarHijo(inswhile);
+            RESULT = instruccion;
+        :}
+      | FinPrograma:fnpro Numero:num FinLinea:fnl
+        {:
+            Nodo instruccion = new Nodo("Instruccion");
+            instruccion.agregarHijo(new Nodo(fnpro.toString()));
+            instruccion.agregarHijo(new Nodo(num.toString()));
+            instruccion.agregarHijo(new Nodo(fnl.toString()));
+            RESULT = instruccion;
+        :}
+        // ERRORES ESPECÍFICOS DE FIN DE LÍNEA
+      | DECLARACION:dec error:e
+        {:
+            parser.report_error("falta fin de línea ':_:' después de declaración", e);
+        :}
+      | ASIGNACION:asign error:e
+        {:
+            parser.report_error("falta fin de línea ':_:' después de asignación", e);
+        :}
+      | INCREMENTO:inc error:e
+        {:
+            parser.report_error("falta fin de línea ':_:' después de incremento", e);
+        :}
+      | DECREMENTO:dec error:e
+        {:
+            parser.report_error("falta fin de línea ':_:' después de decremento", e);
+        :}
+      | INSTRUCCION_COUT:inscout error:e
+        {:
+            parser.report_error("falta fin de línea ':_:' después de cout", e);
+        :}
+      | INSTRUCCION_CIN:inscin error:e
+        {:
+            parser.report_error("falta fin de línea ':_:' después de cin", e);
+        :}
+      | FinPrograma:fnpro Numero:num error:e
+        {:
+            parser.report_error("falta fin de línea ':_:' después de Finish", e);
+        :};
+
+// Definición de declaracion de variables
 DECLARACION ::= TIPO:datatype LISTA_DECLARACIONES:listdec{:
                     Nodo declaracion = new Nodo("Declaración");
                     declaracion.agregarHijo(datatype);
                     declaracion.agregarHijo(listdec);
                     RESULT = declaracion;
               :};
-
+// Definición de lista de variables
 LISTA_DECLARACIONES ::= LISTA_DECLARACIONES:listdec Separador:coma DECLARACION_SIMPLE:simpledec{:
                             Nodo listaDeclaraciones = new Nodo("Lista_Declaraciones");
                             listaDeclaraciones.agregarHijo(listdec);
@@ -187,7 +429,7 @@ LISTA_DECLARACIONES ::= LISTA_DECLARACIONES:listdec Separador:coma DECLARACION_S
                             listaDeclaraciones.agregarHijo(simpledec);
                             RESULT = listaDeclaraciones;
                       :};
-
+// Definición de declaración simple
 DECLARACION_SIMPLE ::= Identificador:id{:
                             Nodo declaracionSimple = new Nodo("Declaracion_Simple");
                             declaracionSimple.agregarHijo(new Nodo(id.toString()));
@@ -200,38 +442,38 @@ DECLARACION_SIMPLE ::= Identificador:id{:
                             declaracionSimple.agregarHijo(ex);
                             RESULT = declaracionSimple;
                      :};
-
+// Declaración de tipo de dato
 TIPO ::= TipoInt:datoint{:
-          Nodo tipoDato = new Nodo("Tipo_Dato");
-          tipoDato.agregarHijo(new Nodo(datoint.toString()));
-          RESULT = tipoDato;
-       :}
-       | TipoFloat:datofloat{:
-          Nodo tipoDato = new Nodo("Tipo_Dato");
-          tipoDato.agregarHijo(new Nodo(datofloat.toString()));
-          RESULT = tipoDato;
-       :}
-       | TipoDouble:datodouble{:
-          Nodo tipoDato = new Nodo("Tipo_Dato");
-          tipoDato.agregarHijo(new Nodo(datodouble.toString()));
-          RESULT = tipoDato;
-       :}
-       | TipoString:datostring{:
-          Nodo tipoDato = new Nodo("Tipo_Dato");
-          tipoDato.agregarHijo(new Nodo(datostring.toString()));
-          RESULT = tipoDato;
-       :}
-       | TipoChar:datochar{:
-          Nodo tipoDato = new Nodo("Tipo_Dato");
-          tipoDato.agregarHijo(new Nodo(datochar.toString()));
-          RESULT = tipoDato;
-       :}
-       | TipoBoolean:datobooleano{:
-          Nodo tipoDato = new Nodo("Tipo_Dato");
-          tipoDato.agregarHijo(new Nodo(datobooleano.toString()));
-          RESULT = tipoDato;
-       :};
-
+            Nodo tipoDato = new Nodo("Tipo_Dato");
+            tipoDato.agregarHijo(new Nodo(datoint.toString()));
+            RESULT = tipoDato;
+         :}
+         | TipoFloat:datofloat{:
+            Nodo tipoDato = new Nodo("Tipo_Dato");
+            tipoDato.agregarHijo(new Nodo(datofloat.toString()));
+            RESULT = tipoDato;
+         :}
+         | TipoDouble:datodouble{:
+            Nodo tipoDato = new Nodo("Tipo_Dato");
+            tipoDato.agregarHijo(new Nodo(datodouble.toString()));
+            RESULT = tipoDato;
+         :}
+         | TipoString:datostring{:
+            Nodo tipoDato = new Nodo("Tipo_Dato");
+            tipoDato.agregarHijo(new Nodo(datostring.toString()));
+            RESULT = tipoDato;
+         :}
+         | TipoChar:datochar{:
+            Nodo tipoDato = new Nodo("Tipo_Dato");
+            tipoDato.agregarHijo(new Nodo(datochar.toString()));
+            RESULT = tipoDato;
+         :}
+         | TipoBoolean:datobooleano{:
+            Nodo tipoDato = new Nodo("Tipo_Dato");
+            tipoDato.agregarHijo(new Nodo(datobooleano.toString()));
+            RESULT = tipoDato;
+         :};
+// Declaración de asignación de variables
 ASIGNACION ::= Identificador:id OperadorAsignacion:opasign EXPRESION:ex{:
                 Nodo asignacion = new Nodo("Asignacion");
                 asignacion.agregarHijo(new Nodo(id.toString()));
@@ -288,7 +530,7 @@ DECREMENTO ::= Identificador:id OperadorDecremento:opdecre{:
                 decremento.agregarHijo(new Nodo(opdecre.toString()));
                 RESULT = decremento;
             :};
-
+// Declaración de instrucción de entrada de datos
 INSTRUCCION_CIN ::= EntradaInfo:ininfo OperadorEntrada:opin Identificador:id{:
                 Nodo instruccionCin = new Nodo("CIN");
                 instruccionCin.agregarHijo(new Nodo(ininfo.toString()));
@@ -296,7 +538,7 @@ INSTRUCCION_CIN ::= EntradaInfo:ininfo OperadorEntrada:opin Identificador:id{:
                 instruccionCin.agregarHijo(new Nodo(id.toString()));
                 RESULT = instruccionCin;
             :};
-
+// Declaración de instrucción de salida de datos
 INSTRUCCION_COUT ::= SalidaInfo:outinfo OperadorSalida:opcout EXPRESION:ex{:
                       Nodo instruccionCout = new Nodo("COUT");
                       instruccionCout.agregarHijo(new Nodo(outinfo.toString()));
@@ -331,7 +573,7 @@ INSTRUCCION_COUT ::= SalidaInfo:outinfo OperadorSalida:opcout EXPRESION:ex{:
                       instruccionCout.agregarHijo(new Nodo(nwline.toString())); 
                       RESULT = instruccionCout;
                    :};
-
+// Definición de concatenación de texto
 CONCATENAR ::= ConcatenacionText:conctext EXPRESION:ex{:
                 Nodo concatenacionTexto = new Nodo("Concatenacion_Texto");
                 concatenacionTexto.agregarHijo(new Nodo(conctext.toString()));
@@ -346,45 +588,103 @@ CONCATENAR ::= ConcatenacionText:conctext EXPRESION:ex{:
                 RESULT = concatenacionTexto;
              :}; 
 
-INSTRUCCION_CONDICIONAL ::= InstruccionIf:insif ParentesisApertura:pa EXPRESION:ex ParentesisCierre:pc LlaveApertura:lla INSTRUCCIONES:ins LlaveCierre:llc{:
-                                Nodo instruccionCondicion = new Nodo("if");
-                                instruccionCondicion.agregarHijo(new Nodo(insif.toString()));
-                                instruccionCondicion.agregarHijo(new Nodo(pa.toString()));
-                                instruccionCondicion.agregarHijo(ex);
-                                instruccionCondicion.agregarHijo(new Nodo(pc.toString()));
-                                instruccionCondicion.agregarHijo(new Nodo(lla.toString()));                                
-                                instruccionCondicion.agregarHijo(ins);                              
-                                instruccionCondicion.agregarHijo(new Nodo(llc.toString()));                              
-                                RESULT = instruccionCondicion;
-                          :}
-                          | InstruccionIf:insif ParentesisApertura:pa EXPRESION:ex ParentesisCierre:pc LlaveApertura:lla INSTRUCCIONES:ins LlaveCierre:llc InstruccionElse:inselse LlaveApertura:llaelse INSTRUCCIONES:instelse LlaveCierre:llcelse{:
-                                Nodo instruccionCondicion = new Nodo("if");
-                                instruccionCondicion.agregarHijo(new Nodo(insif.toString()));
-                                instruccionCondicion.agregarHijo(new Nodo(pa.toString()));
-                                instruccionCondicion.agregarHijo(ex);
-                                instruccionCondicion.agregarHijo(new Nodo(pc.toString()));
-                                instruccionCondicion.agregarHijo(new Nodo(lla.toString()));                                
-                                instruccionCondicion.agregarHijo(ins);                              
-                                instruccionCondicion.agregarHijo(new Nodo(llc.toString()));                            
-                                instruccionCondicion.agregarHijo(new Nodo(inselse.toString()));                           
-                                instruccionCondicion.agregarHijo(new Nodo(llaelse.toString()));                         
-                                instruccionCondicion.agregarHijo(instelse);                       
-                                instruccionCondicion.agregarHijo(new Nodo(llcelse.toString()));                       
-                                RESULT = instruccionCondicion;
-                          :};
+// Declaración de if, if-else
+INSTRUCCION_CONDICIONAL ::=
+            // Caso correcto - if simple
+            InstruccionIf:insif ParentesisApertura:pa EXPRESION:ex ParentesisCierre:pc LlaveApertura:lla INSTRUCCIONES:ins LlaveCierre:llc
+            {:
+                Nodo instruccionCondicion = new Nodo("if");
+                instruccionCondicion.agregarHijo(new Nodo(insif.toString()));
+                instruccionCondicion.agregarHijo(new Nodo(pa.toString()));
+                instruccionCondicion.agregarHijo(ex);
+                instruccionCondicion.agregarHijo(new Nodo(pc.toString()));
+                instruccionCondicion.agregarHijo(new Nodo(lla.toString()));
+                instruccionCondicion.agregarHijo(ins);
+                instruccionCondicion.agregarHijo(new Nodo(llc.toString()));
+                RESULT = instruccionCondicion;
+            :}
+            // Caso correcto - if-else completo
+          | InstruccionIf:insif ParentesisApertura:pa EXPRESION:ex ParentesisCierre:pc LlaveApertura:lla INSTRUCCIONES:ins LlaveCierre:llc InstruccionElse:inselse LlaveApertura:llaelse INSTRUCCIONES:instelse LlaveCierre:llcelse
+            {:
+                Nodo instruccionCondicion = new Nodo("if");
+                instruccionCondicion.agregarHijo(new Nodo(insif.toString()));
+                instruccionCondicion.agregarHijo(new Nodo(pa.toString()));
+                instruccionCondicion.agregarHijo(ex);
+                instruccionCondicion.agregarHijo(new Nodo(pc.toString()));
+                instruccionCondicion.agregarHijo(new Nodo(lla.toString()));
+                instruccionCondicion.agregarHijo(ins);
+                instruccionCondicion.agregarHijo(new Nodo(llc.toString()));
+                instruccionCondicion.agregarHijo(new Nodo(inselse.toString()));
+                instruccionCondicion.agregarHijo(new Nodo(llaelse.toString()));
+                instruccionCondicion.agregarHijo(instelse);
+                instruccionCondicion.agregarHijo(new Nodo(llcelse.toString()));
+                RESULT = instruccionCondicion;
+            :}
+            // Error: problema específico en el bloque if - usar BLOQUE_ERROR
+          | InstruccionIf:insif ParentesisApertura:pa EXPRESION:ex ParentesisCierre:pc BLOQUE_ERROR:bloq
+            {:
+                parser.report_error("if - error en el bloque", null);
+                Nodo instruccionCondicion = new Nodo("if");
+                instruccionCondicion.agregarHijo(new Nodo(insif.toString()));
+                instruccionCondicion.agregarHijo(new Nodo(pa.toString()));
+                instruccionCondicion.agregarHijo(ex);
+                instruccionCondicion.agregarHijo(new Nodo(pc.toString()));
+                instruccionCondicion.agregarHijo(bloq);
+                RESULT = instruccionCondicion;
+            :}
+            // Error: problema específico en el bloque else
+          | InstruccionIf:insif ParentesisApertura:pa EXPRESION:ex ParentesisCierre:pc LlaveApertura:lla INSTRUCCIONES:ins LlaveCierre:llc InstruccionElse:inselse BLOQUE_ERROR:bloq
+            {:
+                parser.report_error("else - error en el bloque", null);
+                Nodo instruccionCondicion = new Nodo("if");
+                instruccionCondicion.agregarHijo(new Nodo(insif.toString()));
+                instruccionCondicion.agregarHijo(new Nodo(pa.toString()));
+                instruccionCondicion.agregarHijo(ex);
+                instruccionCondicion.agregarHijo(new Nodo(pc.toString()));
+                instruccionCondicion.agregarHijo(new Nodo(lla.toString()));
+                instruccionCondicion.agregarHijo(ins);
+                instruccionCondicion.agregarHijo(new Nodo(llc.toString()));
+                instruccionCondicion.agregarHijo(new Nodo(inselse.toString()));
+                instruccionCondicion.agregarHijo(bloq);
+                RESULT = instruccionCondicion;
+            :};
 
-INSTRUCCION_WHILE ::= InstruccionWhile:inswhile ParentesisApertura:pa EXPRESION:ex ParentesisCierre:pc LlaveApertura:lla INSTRUCCIONES:ins LlaveCierre:llc{:
-                               Nodo instruccionWhile = new Nodo("Instruccion_While");
-                               instruccionWhile.agregarHijo(new Nodo(inswhile.toString()));
-                               instruccionWhile.agregarHijo(new Nodo(pa.toString()));
-                               instruccionWhile.agregarHijo(ex);
-                               instruccionWhile.agregarHijo(new Nodo(pc.toString()));
-                               instruccionWhile.agregarHijo(new Nodo(lla.toString()));
-                               instruccionWhile.agregarHijo(ins);
-                               instruccionWhile.agregarHijo(new Nodo(llc.toString()));
-                               RESULT = instruccionWhile;
-                    :};
-                    
+// Declaración de While
+INSTRUCCION_WHILE ::=
+            // While normal
+            InstruccionWhile:inswhile ParentesisApertura:pa EXPRESION:ex ParentesisCierre:pc BLOQUE_INSTRUCCIONES:bloq
+            {:
+                Nodo instruccionWhile = new Nodo("Instruccion_While");
+                instruccionWhile.agregarHijo(new Nodo(inswhile.toString()));
+                instruccionWhile.agregarHijo(new Nodo(pa.toString()));
+                instruccionWhile.agregarHijo(ex);
+                instruccionWhile.agregarHijo(new Nodo(pc.toString()));
+                instruccionWhile.agregarHijo(bloq);
+                RESULT = instruccionWhile;
+            :}
+            // Error: problema específico en el bloque while
+          | InstruccionWhile:inswhile ParentesisApertura:pa EXPRESION:ex ParentesisCierre:pc BLOQUE_ERROR:bloq
+            {:
+                Nodo instruccionWhile = new Nodo("Instruccion_While");
+                instruccionWhile.agregarHijo(new Nodo(inswhile.toString()));
+                instruccionWhile.agregarHijo(new Nodo(pa.toString()));
+                instruccionWhile.agregarHijo(ex);
+                instruccionWhile.agregarHijo(new Nodo(pc.toString()));
+                instruccionWhile.agregarHijo(bloq);
+                RESULT = instruccionWhile;
+            :}
+            // Error en la condición del while
+          | InstruccionWhile:inswhile ParentesisApertura:pa error:e BLOQUE_INSTRUCCIONES:bloq
+            {:
+                parser.report_error("while - error en la condición", e);
+            :}
+            // Error general en while
+          | InstruccionWhile:inswhile error:e
+            {:
+                parser.report_error("while - error en estructura general", e);
+            :};
+
+// Declaración de expresiones                
 EXPRESION ::= EXPRESION:ex OperadorSuma:opsuma EXPRESION:ex2{:
                    Nodo expresion = new Nodo("Expresion");
                    expresion.agregarHijo(ex);
@@ -527,7 +827,7 @@ EXPRESION ::= EXPRESION:ex OperadorSuma:opsuma EXPRESION:ex2{:
                    expresion.agregarHijo(ex);
                    RESULT = expresion;
             :};
-
+// Declaración de Números, cadenas de texto(strings), carácteres y valores booleanos (true|false)
 LITERAL ::= Numero:num{:
                 Nodo literal = new Nodo("Literal");
                 literal.agregarHijo(new Nodo(num.toString()));

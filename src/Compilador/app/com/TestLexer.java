@@ -18,6 +18,8 @@ import AnalizadorSintactico.app.com.Syntax;
 import AnalizadorSintactico.app.com.LexerCup;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Image;
+import java.awt.Toolkit;
 import java.awt.event.ItemEvent;
 import java.io.IOException;
 import java.io.StringReader;
@@ -26,11 +28,13 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.List;
+import java_cup.parser;
 import java_cup.runtime.Symbol;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JTextPane;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.filechooser.FileSystemView;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.AttributeSet;
@@ -63,15 +67,21 @@ public class TestLexer extends javax.swing.JFrame {
     final AttributeSet character = contenido.addAttribute(contenido.getEmptySet(), StyleConstants.Foreground, new Color(65, 105, 225));
     final AttributeSet normal = contenido.addAttribute(contenido.getEmptySet(), StyleConstants.Foreground, new Color(0, 0, 0));
 
+        // Asigna el icono de la imagen al estar ejecutandose la interfaz
+    @Override
+    public Image getIconImage() {
+        Image retValue = Toolkit.getDefaultToolkit().getImage(ClassLoader.getSystemResource("Compilador/app/com/Icon/LogoInfinix.jpg"));
+        return retValue;
+    }
     /**
      * Creates new form TestLexer
      */
     public TestLexer() {
         initComponents();
-        this.setTitle("Fases de un Compilador");
+        this.setTitle("Compilador de Infinix");
         this.setResizable(false);
         this.setLocationRelativeTo(null);
-        this.setSize(new Dimension(820, 440));
+        this.setSize(new Dimension(880, 460));
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.applyColors();
         dataModel = new DefaultTableModel() {
@@ -112,6 +122,7 @@ public class TestLexer extends javax.swing.JFrame {
         jLexerTable = new javax.swing.JTable();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setIconImage(getIconImage());
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jPanel1.setBackground(new java.awt.Color(65, 105, 225));
@@ -154,7 +165,7 @@ public class TestLexer extends javax.swing.JFrame {
 
         jTxtValidacionSintactico.setEditable(false);
         jTxtValidacionSintactico.setColumns(20);
-        jTxtValidacionSintactico.setFont(new java.awt.Font("Lucida Console", 0, 12)); // NOI18N
+        jTxtValidacionSintactico.setFont(new java.awt.Font("Dialog", 1, 12)); // NOI18N
         jTxtValidacionSintactico.setRows(5);
         jScrollPane3.setViewportView(jTxtValidacionSintactico);
 
@@ -168,7 +179,7 @@ public class TestLexer extends javax.swing.JFrame {
         });
 
         jChCodigoFuente.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
-        jChCodigoFuente.setText("Habilitar Código Fuente");
+        jChCodigoFuente.setText("Habilitar Edición de Código Fuente");
         jChCodigoFuente.addItemListener(new java.awt.event.ItemListener() {
             public void itemStateChanged(java.awt.event.ItemEvent evt) {
                 jChCodigoFuenteItemStateChanged(evt);
@@ -177,7 +188,7 @@ public class TestLexer extends javax.swing.JFrame {
 
         jScrollPane4.setViewportView(jTxtCodigoFuente);
 
-        jLexerTable.setBackground(new java.awt.Color(153, 153, 153));
+        jLexerTable.setBackground(new java.awt.Color(255, 255, 255));
         jLexerTable.setForeground(new java.awt.Color(255, 0, 0));
         jLexerTable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -191,7 +202,7 @@ public class TestLexer extends javax.swing.JFrame {
             }
         ));
         jLexerTable.setCellSelectionEnabled(true);
-        jLexerTable.setGridColor(new java.awt.Color(0, 0, 0));
+        jLexerTable.setGridColor(new java.awt.Color(255, 255, 255));
         jLexerTable.setSelectionBackground(new java.awt.Color(51, 204, 255));
         jLexerTable.setShowGrid(true);
         jScrollPane1.setViewportView(jLexerTable);
@@ -204,13 +215,13 @@ public class TestLexer extends javax.swing.JFrame {
                 .addGap(16, 16, 16)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jChCodigoFuente)
+                        .addGap(59, 59, 59)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jChCodigoFuente)
-                                .addGap(59, 59, 59)
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel3)
-                                    .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 292, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addComponent(jLabel3)
+                            .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 427, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 292, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(18, 18, 18)
@@ -218,15 +229,13 @@ public class TestLexer extends javax.swing.JFrame {
                                     .addComponent(jBtnSintactico, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(jBtnAnalizadorLexico, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(jBtnLimpiar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jBtnCargarCodigo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                                .addGap(18, 18, 18)
-                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 301, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addContainerGap(44, Short.MAX_VALUE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 112, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jLabel2)
-                        .addGap(198, 198, 198))))
+                                    .addComponent(jBtnCargarCodigo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                            .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 112, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(jLabel2)
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 365, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addContainerGap(40, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -253,10 +262,10 @@ public class TestLexer extends javax.swing.JFrame {
                     .addComponent(jChCodigoFuente))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(27, Short.MAX_VALUE))
+                .addContainerGap(62, Short.MAX_VALUE))
         );
 
-        getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 820, 410));
+        getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 880, 460));
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -277,7 +286,8 @@ public class TestLexer extends javax.swing.JFrame {
             numToken = 1;
             contador = 1;
             Lexer lexer = new Lexer(lector);
-
+            DefaultTableModel beforeModel = (DefaultTableModel) this.jLexerTable.getModel();
+            beforeModel.setRowCount(0);
             Tokens tokens;
             while ((tokens = lexer.yylex()) != null) {
                 Object[] row = null; // Reinicializamos la fila en cada iteración
@@ -345,77 +355,41 @@ public class TestLexer extends javax.swing.JFrame {
 
             // Instancia de la clase Syntax para el análisis sintáctico
             Syntax s = new Syntax(new LexerCup(new StringReader(ST)));
-
+            
             try {
                 // Activación del análisis sintáctico
-                Symbol resultado = s.parse();
-
+                Symbol resultado = s.parse();               
                 // Obtener la lista de errores después del parsing
+                
                 errores = s.getErrores();
 
-                // Verificar si hubo errores durante el análisis
                 if (errores != null && !errores.isEmpty()) {
-                    // Si hay errores, mostrarlos
-                    StringBuilder mensajeErrores = new StringBuilder();
-                    mensajeErrores.append("Se encontraron los siguientes errores:\n\n");
-
-                    for (int i = 0; i < errores.size(); i++) {
-                        mensajeErrores.append((i + 1)).append(". ").append(errores.get(i)).append("\n");
-                    }
-
-                    this.jTxtValidacionSintactico.setText(mensajeErrores.toString());
-                    this.jTxtValidacionSintactico.setForeground(Color.RED);
+                    // Si se detectaron errores, se muestran
+                    System.out.println(resultado.toString());
+                    showSyntaxErrors(resultado, errores, null);
                 } else {
-                    // Si no hay errores, el análisis fue exitoso
+                    // Si no hay errores, se muestra el mensaje de éxito y se procesa el árbol
                     this.jTxtValidacionSintactico.setText("✓ Análisis sintáctico realizado correctamente\nNo se encontraron errores de sintaxis");
                     this.jTxtValidacionSintactico.setForeground(new Color(8, 101, 34));
 
-                    // Aquí puedes descomentar el código del árbol si lo necesitas
                     raiz = (Nodo) resultado.value;
-                    if (raiz != null) {
+                     if (raiz != null) {
                         raiz.printArbol(raiz);
                         arbol = new ArbolJGrapht();
                         arbol.construirGrafo(raiz);
-                        visualizador = new VisualizadorArbol(arbol.getGrafo());
+                        visualizador = new VisualizadorArbol(arbol.getGrafo());                        
                         visualizador.mostrar();
                     }
-
                 }
-
             } catch (Exception ex) {
-                // Capturar errores de parsing
-                Symbol sym = s.getS();
-                errores = s.getErrores();
+                // En caso de excepción, se obtiene el símbolo de error (si está disponible) y la lista de errores
+                // Symbol sym = s.getS();
+                // errores = s.getErrores();
 
-                StringBuilder mensajeError = new StringBuilder();
-                mensajeError.append("Error durante el análisis sintáctico:\n\n");
+                // Llama al método auxiliar para mostrar los errores asociados a la excepción
+                // showSyntaxErrors(sym, errores, ex);
 
-                // Mostrar información del símbolo donde ocurrió el error
-                if (sym != null) {
-                    mensajeError.append("Ubicación del error:\n");
-                    mensajeError.append("- Línea: ").append(sym.left + 1).append("\n");
-                    mensajeError.append("- Columna: ").append(sym.right + 1).append("\n");
-                    if (sym.value != null) {
-                        mensajeError.append("- Token: \"").append(sym.value).append("\"\n");
-                    }
-                    mensajeError.append("\n");
-                }
-
-                // Mostrar todos los errores recopilados
-                if (errores != null && !errores.isEmpty()) {
-                    mensajeError.append("Errores detectados:\n");
-                    System.out.println(errores.size());
-                    for (int i = 0; i < errores.size(); i++) {
-                        mensajeError.append((i + 1)).append(". ").append(errores.get(i)).append("\n");
-                    }
-                } else {
-                    mensajeError.append("Detalles: ").append(ex.getMessage());
-                }
-
-                this.jTxtValidacionSintactico.setText(mensajeError.toString());
-                this.jTxtValidacionSintactico.setForeground(Color.RED);
-
-                // Log del error para debugging
+                // Registro del error para debugging
                 Logger.getLogger(TestLexer.class.getName()).log(Level.WARNING, "Error en análisis sintáctico", ex);
             }
 
@@ -430,12 +404,14 @@ public class TestLexer extends javax.swing.JFrame {
     private void jBtnCargarCodigoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnCargarCodigoActionPerformed
         // Objeto JFileChooser para seleccionar y abrir el código fuente
         JFileChooser chooser = new JFileChooser(FileSystemView.getFileSystemView());
+        chooser.setDialogTitle("Selecciona un archico");
         int opcion = chooser.showOpenDialog(this);
-
+        chooser.addChoosableFileFilter(new FileNameExtensionFilter("Archivos de Texto", "txt"));
         if (opcion == JFileChooser.APPROVE_OPTION) {
             File archivo = chooser.getSelectedFile();
+            this.jChCodigoFuente.setSelected(false);
             this.jTxtCodigoFuente.setEditable(false);
-
+            JOptionPane.showMessageDialog(this, "Archivo seleccionado: " + archivo.getName(), "Selección de Archivo", JOptionPane.INFORMATION_MESSAGE);
             StyledDocument doc = jTxtCodigoFuente.getStyledDocument();
             try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
                 doc.remove(0, doc.getLength()); // Limpiar el contenido anterior
@@ -452,10 +428,14 @@ public class TestLexer extends javax.swing.JFrame {
     }//GEN-LAST:event_jBtnCargarCodigoActionPerformed
 
     private void jChCodigoFuenteItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jChCodigoFuenteItemStateChanged
-        if (evt.getStateChange() == ItemEvent.SELECTED)
+        if (evt.getStateChange() == ItemEvent.SELECTED){
             this.jTxtCodigoFuente.setEditable(true);
-        else
+            this.jChCodigoFuente.setText("Deshabilitar Edición de Código Fuente");
+        }
+        else{
             this.jTxtCodigoFuente.setEditable(false);
+            this.jChCodigoFuente.setText("Habilitar Edición de Código Fuente");
+        }
     }//GEN-LAST:event_jChCodigoFuenteItemStateChanged
 
     /**
@@ -511,8 +491,21 @@ public class TestLexer extends javax.swing.JFrame {
     private javax.swing.JTextArea jTxtValidacionSintactico;
     // End of variables declaration//GEN-END:variables
 
-    private void loadLexer() {
-        this.jLexerTable.setModel(dataModel);
+    private void showSyntaxErrors(Symbol sym, List<String> errores, Exception ex) {
+        StringBuilder mensajeError = new StringBuilder("Error durante el análisis sintáctico:\n\n");        
+        // Si hay errores registrados, listarlos        
+        if (errores != null && !errores.isEmpty()) {
+            mensajeError.append("Errores detectados:\n");
+            for (int i = 0; i < errores.size(); i++) {
+                mensajeError.append((i + 1)).append(". ").append(errores.get(i)).append("\n");
+            }
+        } else if (ex != null) {
+            mensajeError.append("Detalles: ").append(ex.getMessage());
+        }
+
+        // Actualiza el área de texto con el mensaje de error
+        this.jTxtValidacionSintactico.setText(mensajeError.toString());
+        this.jTxtValidacionSintactico.setForeground(Color.RED);
     }
 
     private void applyColors() {

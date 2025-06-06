@@ -3,20 +3,18 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package AAS.app.com;
-
-import java.util.ArrayList;
-
 /**
  *
  * @author capis
  */
+import java.util.ArrayList;
 public class Nodo {
 
     private ArrayList<Nodo> hijos;
-    private String etiqueta;
+    private String valor;
 
-    public Nodo(String etiqueta) {
-        this.etiqueta = etiqueta;
+    public Nodo(String valor) {
+        this.valor = valor;
         this.hijos = new ArrayList<>();
     }
 
@@ -28,16 +26,16 @@ public class Nodo {
         return hijos;
     }
 
-    public String getEtiqueta() {
-        return String.valueOf(etiqueta);
+    public String getValor() {
+        return String.valueOf(valor);
     }
 
-    public void setEtiqueta(String etiqueta) {
-        this.etiqueta = etiqueta;
+    public void setValor(String valor) {
+        this.valor = valor;
     }
 
     public void printArbol(Nodo raiz) {
-        System.out.println(raiz.getEtiqueta());
+        System.out.println(raiz.getValor());
         for (Nodo hijo : raiz.hijos) {
             printArbol(hijo);
         }        

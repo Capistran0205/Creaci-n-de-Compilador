@@ -17,7 +17,7 @@ public class ArbolJGrapht {
     public ArbolJGrapht() {
         grafo = new DefaultDirectedGraph<>(DefaultEdge.class);
     }
-
+    // Método recursivo para construir el grafo en función de la GIC y las funciones semánticas establecidas en el CUP
     public void construirGrafo(Nodo raiz) {
         if (raiz != null) {
             grafo.addVertex(raiz);
