@@ -13,9 +13,10 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.PrintWriter;
 import java.io.Reader;
-import AnalizadorLexico.app.com.Lexer;
-import AnalizadorSintactico.app.com.Syntax;
+import AnalizadorLexico.app.com.AnalizadorLexico;
+import AnalizadorLexico.app.com.Token;
 import AnalizadorSintactico.app.com.LexerCup;
+import AnalizadorSintactico.app.com.Sintactico;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Image;
@@ -23,6 +24,7 @@ import java.awt.Toolkit;
 import java.awt.event.ItemEvent;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -48,7 +50,7 @@ import javax.swing.text.StyledDocument;
  *
  * @author capis
  */
-public class TestLexer extends javax.swing.JFrame {
+public class InterfazCompilador extends javax.swing.JFrame {
 
     int numToken, contador;
     Nodo raiz;
@@ -62,21 +64,23 @@ public class TestLexer extends javax.swing.JFrame {
     // Colores
     final AttributeSet dataTypes = contenido.addAttribute(contenido.getEmptySet(), StyleConstants.Foreground, new Color(181, 0, 26));
     final AttributeSet reserved = contenido.addAttribute(contenido.getEmptySet(), StyleConstants.Foreground, new Color(127, 0, 255));
-    final AttributeSet numbers = contenido.addAttribute(contenido.getEmptySet(), StyleConstants.Foreground, new Color(212, 175, 55));
+    final AttributeSet numbers = contenido.addAttribute(contenido.getEmptySet(), StyleConstants.Foreground, new Color(186, 142, 35));
     final AttributeSet strings = contenido.addAttribute(contenido.getEmptySet(), StyleConstants.Foreground, new Color(0, 143, 57));
     final AttributeSet character = contenido.addAttribute(contenido.getEmptySet(), StyleConstants.Foreground, new Color(65, 105, 225));
     final AttributeSet normal = contenido.addAttribute(contenido.getEmptySet(), StyleConstants.Foreground, new Color(0, 0, 0));
+    final AttributeSet comments = contenido.addAttribute(contenido.getEmptySet(), StyleConstants.Foreground, new Color(255, 99, 71));
 
-        // Asigna el icono de la imagen al estar ejecutandose la interfaz
+    // Asigna el icono de la imagen al estar ejecutandose la interfaz
     @Override
     public Image getIconImage() {
         Image retValue = Toolkit.getDefaultToolkit().getImage(ClassLoader.getSystemResource("Compilador/app/com/Icon/LogoInfinix.jpg"));
         return retValue;
     }
+
     /**
      * Creates new form TestLexer
      */
-    public TestLexer() {
+    public InterfazCompilador() {
         initComponents();
         this.setTitle("Compilador de Infinix");
         this.setResizable(false);
@@ -130,7 +134,7 @@ public class TestLexer extends javax.swing.JFrame {
         jLabel1.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         jLabel1.setText("Código Fuente:");
 
-        jBtnAnalizadorLexico.setBackground(new java.awt.Color(144, 238, 144));
+        jBtnAnalizadorLexico.setBackground(new java.awt.Color(80, 200, 120));
         jBtnAnalizadorLexico.setForeground(new java.awt.Color(0, 0, 0));
         jBtnAnalizadorLexico.setText("Analizador Léxico");
         jBtnAnalizadorLexico.addActionListener(new java.awt.event.ActionListener() {
@@ -271,48 +275,50 @@ public class TestLexer extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jBtnAnalizadorLexicoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnAnalizadorLexicoActionPerformed
-        File file = new File("Prueba.txt");
+        if (this.jTxtCodigoFuente.getText().isBlank() || this.jTxtCodigoFuente.getText().isBlank()) {
+            this.jTxtValidacionSintactico.setForeground(new Color(255, 99, 71));
+            this.jTxtValidacionSintactico.setText("No hay código fuente para analizar");
+            return;
+        }
 
-        // Guardar el contenido del JTextArea en un archivo
+        File file = new File("Prueba.txt");
         try (PrintWriter escribir = new PrintWriter(file)) {
             escribir.print(this.jTxtCodigoFuente.getText());
         } catch (FileNotFoundException ex) {
-            Logger.getLogger(TestLexer.class.getName()).log(Level.SEVERE, null, ex);
-            return; // No continuamos si no pudimos escribir el archivo
+            Logger.getLogger(InterfazCompilador.class.getName()).log(Level.SEVERE, null, ex);
+            return;
         }
-
-        // Analizar el contenido del archivo
         try (Reader lector = new BufferedReader(new FileReader(file))) {
             numToken = 1;
             contador = 1;
-            Lexer lexer = new Lexer(lector);
-            DefaultTableModel beforeModel = (DefaultTableModel) this.jLexerTable.getModel();
-            beforeModel.setRowCount(0);
-            Tokens tokens;
-            while ((tokens = lexer.yylex()) != null) {
-                Object[] row = null; // Reinicializamos la fila en cada iteración
+            var lexer = new AnalizadorLexico(lector);
 
+            // UN solo modelo: el mismo que limpias es el que llenas
+            DefaultTableModel dataModel = (DefaultTableModel) this.jLexerTable.getModel();
+            dataModel.setRowCount(0);
+
+            Token tokens;
+            while ((tokens = lexer.yylex()) != null) {
+                Object[] row = null;
                 switch (tokens) {
-                    case Linea ->
+                    case LINEA ->
                         contador++;
                     case ERROR ->
-                        row = new Object[]{numToken, lexer.lexeme, "Error, Símbolo no definido:"};
+                        row = new Object[]{numToken, lexer.lexeme,
+                            "Error, símbolo no definido (línea " + contador + ")"};
                     default ->
                         row = new Object[]{numToken, lexer.lexeme, tokens};
                 }
-
-                if (row != null) { // Solo agregamos si row tiene contenido
+                if (row != null) {
                     dataModel.addRow(row);
-                    numToken++; // Incrementamos el contador después de agregar la fila
+                    numToken++;
                 }
             }
-
         } catch (FileNotFoundException ex) {
-            Logger.getLogger(TestLexer.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(InterfazCompilador.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
-            Logger.getLogger(TestLexer.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(InterfazCompilador.class.getName()).log(Level.SEVERE, null, ex);
         }
-
     }//GEN-LAST:event_jBtnAnalizadorLexicoActionPerformed
 
     private void jBtnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnLimpiarActionPerformed
@@ -321,83 +327,63 @@ public class TestLexer extends javax.swing.JFrame {
         this.jTxtCodigoFuente.setText(null);
         this.jTxtValidacionSintactico.setText(null);
         this.jTxtCodigoFuente.setEditable(true);
-        // raiz = null;
+        this.jTxtValidacionSintactico.setForeground(Color.BLACK);
+        raiz = null;
     }//GEN-LAST:event_jBtnLimpiarActionPerformed
 
+
     private void jBtnSintacticoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnSintacticoActionPerformed
-        try {
-            // Limpiar el área de validación antes de comenzar
-            this.jTxtValidacionSintactico.setText("");
+        if (this.jTxtCodigoFuente.getText().isBlank() || this.jTxtCodigoFuente.getText().isBlank()) {
+            this.jTxtValidacionSintactico.setForeground(new Color(255, 99, 71));
+            this.jTxtValidacionSintactico.setText("No hay código fuente para analizar");
+            return;
+        }
 
-            // Leer el archivo con try-with-resources
-            File file = new File("Prueba.txt");
+        File file = new File("Prueba.txt");
+        // Guardar el contenido del JTextArea en un archivo
+        try (PrintWriter escribir = new PrintWriter(file)) {
+            escribir.print(this.jTxtCodigoFuente.getText());
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(InterfazCompilador.class.getName()).log(Level.SEVERE, null, ex);
+            return;
+        }
 
-            // Guardar el contenido del JTextArea en un archivo
-            try (PrintWriter escribir = new PrintWriter(file)) {
-                escribir.print(this.jTxtCodigoFuente.getText());
-            } catch (FileNotFoundException ex) {
-                Logger.getLogger(TestLexer.class.getName()).log(Level.SEVERE, null, ex);
-                this.jTxtValidacionSintactico.setText("Error: No se pudo crear el archivo temporal");
-                this.jTxtValidacionSintactico.setForeground(Color.RED);
-                return;
-            }
+        // Analizar sintacticamente
+        try (Reader lector = new BufferedReader(new FileReader(file))) {
+            LexerCup lexer = new LexerCup(lector);
+            var parser = new Sintactico(lexer);
 
-            StringBuilder contenido = new StringBuilder();
-            // Lectura del archivo para pasarlo al parser
-            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-                String linea;
-                while ((linea = br.readLine()) != null) {
-                    contenido.append(linea).append("\n");
+            parser.parse(); // Con modo panico
+
+            if (parser.huboErrores()) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Análisis sintáctico con errores:\nSe encontraron ").append(parser.errores.size()).append(" error(es):\n\n");
+                int n = 1;
+                for (String error : parser.errores) {
+                    sb.append("No.").append(n++).append(" ").append(error).append("\n");
                 }
-            }
+                this.jTxtValidacionSintactico.setForeground(new Color(255, 44, 44));
+                this.jTxtValidacionSintactico.setText(sb.toString());
+            } else {
+                this.jTxtValidacionSintactico.setForeground(new Color(80, 200, 120));
+                this.jTxtValidacionSintactico.setText("Análisis sintáctico correcto: el programa pertenece al lenguaje.");
 
-            String ST = contenido.toString();
-
-            // Instancia de la clase Syntax para el análisis sintáctico
-            Syntax s = new Syntax(new LexerCup(new StringReader(ST)));
-            
-            try {
-                // Activación del análisis sintáctico
-                Symbol resultado = s.parse();               
-                // Obtener la lista de errores después del parsing
-                
-                errores = s.getErrores();
-
-                if (errores != null && !errores.isEmpty()) {
-                    // Si se detectaron errores, se muestran
-                    System.out.println(resultado.toString());
-                    showSyntaxErrors(resultado, errores, null);
-                } else {
-                    // Si no hay errores, se muestra el mensaje de éxito y se procesa el árbol
-                    this.jTxtValidacionSintactico.setText("✓ Análisis sintáctico realizado correctamente\nNo se encontraron errores de sintaxis");
-                    this.jTxtValidacionSintactico.setForeground(new Color(8, 101, 34));
-
-                    raiz = (Nodo) resultado.value;
-                     if (raiz != null) {
-                        raiz.printArbol(raiz);
-                        arbol = new ArbolJGrapht();
-                        arbol.construirGrafo(raiz);
-                        visualizador = new VisualizadorArbol(arbol.getGrafo());                        
-                        visualizador.mostrar();
-                    }
+                // Generación de análisis sintactico
+                Nodo raiz = parser.raiz;
+                if (raiz == null) {
+                    return;
                 }
-            } catch (Exception ex) {
-                // En caso de excepción, se obtiene el símbolo de error (si está disponible) y la lista de errores
-                // Symbol sym = s.getS();
-                // errores = s.getErrores();
 
-                // Llama al método auxiliar para mostrar los errores asociados a la excepción
-                // showSyntaxErrors(sym, errores, ex);
+                ArbolJGrapht arbol = new ArbolJGrapht();
+                arbol.construirGrafo(raiz);
 
-                // Registro del error para debugging
-                Logger.getLogger(TestLexer.class.getName()).log(Level.WARNING, "Error en análisis sintáctico", ex);
+                VisualizadorArbol visualizador = new VisualizadorArbol(arbol.getGrafo());
+                visualizador.mostrar();
             }
-
-        } catch (IOException e) {
-            // Manejo de errores de I/O
-            this.jTxtValidacionSintactico.setText("Error al procesar el archivo: " + e.getMessage());
-            this.jTxtValidacionSintactico.setForeground(Color.RED);
-            Logger.getLogger(TestLexer.class.getName()).log(Level.SEVERE, "Error de I/O", e);
+        } catch (IOException ex) {
+            Logger.getLogger(InterfazCompilador.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (Exception ex) {
+            Logger.getLogger(InterfazCompilador.class.getName()).log(Level.SEVERE, null, ex);
         }
     }//GEN-LAST:event_jBtnSintacticoActionPerformed
 
@@ -428,11 +414,10 @@ public class TestLexer extends javax.swing.JFrame {
     }//GEN-LAST:event_jBtnCargarCodigoActionPerformed
 
     private void jChCodigoFuenteItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jChCodigoFuenteItemStateChanged
-        if (evt.getStateChange() == ItemEvent.SELECTED){
+        if (evt.getStateChange() == ItemEvent.SELECTED) {
             this.jTxtCodigoFuente.setEditable(true);
             this.jChCodigoFuente.setText("Deshabilitar Edición de Código Fuente");
-        }
-        else{
+        } else {
             this.jTxtCodigoFuente.setEditable(false);
             this.jChCodigoFuente.setText("Habilitar Edición de Código Fuente");
         }
@@ -455,20 +440,21 @@ public class TestLexer extends javax.swing.JFrame {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(TestLexer.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(InterfazCompilador.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(TestLexer.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(InterfazCompilador.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(TestLexer.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(InterfazCompilador.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(TestLexer.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(InterfazCompilador.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
+        //</editor-fold>
         //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new TestLexer().setVisible(true);
+                new InterfazCompilador().setVisible(true);
             }
         });
     }
@@ -490,23 +476,6 @@ public class TestLexer extends javax.swing.JFrame {
     private javax.swing.JTextPane jTxtCodigoFuente;
     private javax.swing.JTextArea jTxtValidacionSintactico;
     // End of variables declaration//GEN-END:variables
-
-    private void showSyntaxErrors(Symbol sym, List<String> errores, Exception ex) {
-        StringBuilder mensajeError = new StringBuilder("Error durante el análisis sintáctico:\n\n");        
-        // Si hay errores registrados, listarlos        
-        if (errores != null && !errores.isEmpty()) {
-            mensajeError.append("Errores detectados:\n");
-            for (int i = 0; i < errores.size(); i++) {
-                mensajeError.append((i + 1)).append(". ").append(errores.get(i)).append("\n");
-            }
-        } else if (ex != null) {
-            mensajeError.append("Detalles: ").append(ex.getMessage());
-        }
-
-        // Actualiza el área de texto con el mensaje de error
-        this.jTxtValidacionSintactico.setText(mensajeError.toString());
-        this.jTxtValidacionSintactico.setForeground(Color.RED);
-    }
 
     private void applyColors() {
         // Aplicar estilos al documento
@@ -545,11 +514,12 @@ public class TestLexer extends javax.swing.JFrame {
             doc.setCharacterAttributes(0, doc.getLength(), normal, true);
 
             // PASO 2: Crear patrones de expresiones regulares para identificar cada elemento
-            Pattern stringPattern = Pattern.compile("\"([^\"\\\\]|\\\\.)*\"");    // Cadenas: "texto"
+            Pattern stringPattern = Pattern.compile("@([^@\\\\]|\\\\.)*@"); // Cadenas: @texto@
             Pattern charPattern = Pattern.compile("'([^'\\\\]|\\\\.)'");          // Caracteres: 'c'
-            Pattern reservedPattern = Pattern.compile("\\b(main|Finish|cin|cout|while|if|else)\\b");  // Palabras reservadas
-            Pattern dataTypesPattern = Pattern.compile("\\b(int|string|char|float|double|boolean)\\b"); // Tipos de datos
+            Pattern reservedPattern = Pattern.compile("\\b(mt|inp)\\b");  // Palabras reservadas
+            Pattern dataTypesPattern = Pattern.compile("\\b(entero|cadena|caracter|decimal|booleano)\\b"); // Tipos de datos
             Pattern numbersPattern = Pattern.compile("\\b-?\\d+(\\.\\d+)?\\b");   // Números enteros y decimales
+            Pattern commentsPattern = Pattern.compile("(#.*)|/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/");
 
             // PASO 3: Aplicar estilos por ORDEN DE PRIORIDAD
             // ⚠️ IMPORTANTE: Primero cadenas y caracteres, después el resto
@@ -604,6 +574,16 @@ public class TestLexer extends javax.swing.JFrame {
                 // 🔍 Misma verificación para números
                 if (!isInsideStringOrChar(text, start, stringPattern, charPattern)) {
                     doc.setCharacterAttributes(start, length, numbers, false);
+                }
+            }
+
+            // 6. Aplicar estilo a comentarios
+            Matcher commentsMatcher = commentsPattern.matcher(text);
+            while (commentsMatcher.find()) {
+                int start = commentsMatcher.start();
+                int length = commentsMatcher.end() - start;
+                if (!isInsideStringOrChar(text, start, stringPattern, charPattern)) {
+                    doc.setCharacterAttributes(start, length, comments, false);
                 }
             }
 

@@ -1,0 +1,311 @@
+/* ============================================================
+   Sintactico.cup  -  Analizador sintactico (CUP 0.11a)
+   ------------------------------------------------------------
+   Genera:  Sintactico.java  (parser)  y  sym.java  (terminales)
+   Comando: java -cp java-cup-11a.jar java_cup.Main \
+                 -parser Sintactico Sintactico.cup
+   ============================================================ */
+
+import java_cup.runtime.*;
+import AAS.app.com.Nodo;
+
+/* ---- Codigo que se inyecta en la clase del parser ---- */
+parser code {:
+
+    /** Raiz del arbol de analisis sintactico (la llena la regla 'programa'). */
+    public Nodo raiz = null;
+
+    /** Lista con TODOS los errores de sintaxis encontrados. */
+    public java.util.List<String> errores = new java.util.ArrayList<String>();
+
+    public boolean huboErrores() { return !errores.isEmpty(); }
+
+    public String getErrores() { return String.join("\n", errores); }
+
+    /* ---- Mensaje base: linea, columna y lexema cercano ---- */
+    private String describir(Object info) {
+        StringBuilder m = new StringBuilder("Error de sintaxis");
+        if (info instanceof Symbol) {
+            Symbol s = (Symbol) info;
+            if (s.left >= 0) {
+                m.append(" en linea ").append(s.left + 1)
+                 .append(", columna ").append(s.right + 1);
+            }
+            if (s.value != null) {
+                m.append(" cerca de \"").append(s.value).append("\"");
+            }
+        }
+        return m.toString();
+    }
+
+    /* ---- Mapa id_terminal -> nombre, por reflexion sobre la clase sym ---- */
+    private java.util.Map<Integer,String> nombresTerminales() {
+        java.util.Map<Integer,String> m = new java.util.HashMap<Integer,String>();
+        for (java.lang.reflect.Field f : sym.class.getFields()) {
+            try {
+                if (f.getType() == int.class) m.put(f.getInt(null), f.getName());
+            } catch (Exception e) { }
+        }
+        return m;
+    }
+
+    /* ---- Forma legible de un terminal (simbolo real cuando aplica) ---- */
+    private String simbolo(int id) {
+        if (id == sym.FIN_LINEA)        return "\":_:\"";
+        if (id == sym.ASIGNACION) return "\"=\"";
+        if (id == sym.COMA)       return "\",\"";
+        if (id == sym.MENOR)      return "\"<\"";
+        if (id == sym.MAYOR)      return "\">\"";
+        if (id == sym.PAR_IZQ)    return "\"(\"";
+        if (id == sym.PAR_DER)    return "\")\"";
+        if (id == sym.SUMA)       return "\"+\"";
+        if (id == sym.RESTA)      return "\"-\"";
+        if (id == sym.MULT)       return "\"*\"";
+        if (id == sym.DIV)        return "\"/\"";
+        String n = nombresTerminales().get(id);
+        return (n != null) ? n : ("token#" + id);
+    }
+
+    /* ---- Terminales aceptables en el estado actual del parser ---- */
+    private java.util.List<Integer> esperados(int estado) {
+        java.util.List<Integer> exp = new java.util.ArrayList<Integer>();
+        for (Integer id : nombresTerminales().keySet()) {
+            if (id == error_sym() || id == EOF_sym()) continue;
+            try {
+                if (get_action(estado, id) != 0) exp.add(id);
+            } catch (Exception e) { }
+        }
+        return exp;
+    }
+
+    /* ---- Un terminal que puede iniciar una expresion/elemento de lista ---- */
+    private boolean esInicioDeExpresion(int s) {
+        return s == sym.NUMERO || s == sym.IDENTIFICADOR || s == sym.PAR_IZQ
+            || s == sym.CADENA_LITERAL || s == sym.CARACTER_LITERAL
+            || s == sym.VERDADERO || s == sym.FALSO;
+    }
+
+    /* ---- Sugerencia basada en lo que el parser esperaba ahi ---- */
+    private String sugerencia(int estado, Symbol encontrado) {
+        java.util.List<Integer> exp = esperados(estado);
+        int enc = encontrado.sym;
+
+        // Caracter no reconocido emitido por el lexer (comillas sueltas, @, #, etc.)
+        if (enc == sym.ERROR) {
+            if (exp.contains(sym.IDENTIFICADOR) && !exp.contains(sym.NUMERO))
+                return "Sugerencia: el nombre debe ser un identificador "
+                     + "(no puede llevar comillas o @, ni empezar con numero).";
+            return "Sugerencia: hay un caracter no valido "
+                 + "(revisa comillas, @ u otros simbolos fuera de lugar).";
+        }
+
+        // Falta de coma: se esperaba COMA y lo que vino parece otro elemento de la lista
+        if (exp.contains(sym.COMA) && esInicioDeExpresion(enc))
+            return "Sugerencia: falta una coma \",\" para separar los elementos.";
+
+        // Nombre invalido: se esperaba un identificador pero llego un literal o numero
+        if (exp.contains(sym.IDENTIFICADOR)
+                && (enc == sym.NUMERO || enc == sym.CADENA_LITERAL || enc == sym.CARACTER_LITERAL))
+            return "Sugerencia: el nombre debe ser un identificador "
+                 + "(no puede llevar comillas o @, ni empezar con numero).";
+
+        if (exp.contains(sym.FIN_LINEA))
+            return "Sugerencia: falta el fin de instruccion \":_:\".";
+        if (exp.contains(sym.PAR_DER))
+            return "Sugerencia: falta cerrar el parentesis \")\".";
+        if (exp.contains(sym.MAYOR))
+            return "Sugerencia: falta cerrar la instruccion con \">\".";
+        if (exp.contains(sym.ASIGNACION))
+            return "Sugerencia: falta el signo de asignacion \"=\".";
+        if (exp.contains(sym.IDENTIFICADOR)
+                && !exp.contains(sym.NUMERO) && !exp.contains(sym.PAR_IZQ))
+            return "Sugerencia: aqui se esperaba un identificador.";
+        if (exp.contains(sym.NUMERO) || exp.contains(sym.IDENTIFICADOR)
+                || exp.contains(sym.PAR_IZQ))
+            return "Sugerencia: falta un operando o expresion "
+                 + "(numero, identificador, ( ... ) o literal).";
+
+        // Generico: listar lo que se esperaba de forma legible
+        if (!exp.isEmpty()) {
+            StringBuilder sb = new StringBuilder("Sugerencia: se esperaba ");
+            for (int i = 0; i < exp.size(); i++) {
+                if (i > 0) sb.append(i == exp.size() - 1 ? " o " : ", ");
+                sb.append(simbolo(exp.get(i)));
+            }
+            sb.append(".");
+            return sb.toString();
+        }
+        return null;
+    }
+
+    /* Reduce la ventana de "mirar adelante" al recuperarse, para no
+       tragarse el error de la instruccion siguiente cuando vienen
+       errores pegados (modo panico mas agresivo en re-sincronizar). */
+    protected int error_sync_size() { return 1; }
+
+    /* ---- Se invoca al detectar el error, ANTES de recuperar ---- */
+    public void syntax_error(Symbol cur_token) {
+        int estado = ((Symbol) stack.peek()).parse_state;
+        String msg = describir(cur_token);
+        String sug = sugerencia(estado, cur_token);
+        if (sug != null) msg += "\n   " + sug;
+        errores.add(msg);
+    }
+
+    /* Silenciamos el report_error por defecto (ya lo maneja syntax_error). */
+    public void report_error(String message, Object info) { }
+
+    /* Error irrecuperable: se detiene sin perder la lista ya juntada. */
+    public void report_fatal_error(String message, Object info) {
+        done_parsing();
+        if (!errores.isEmpty()) {
+            int ult = errores.size() - 1;
+            errores.set(ult, errores.get(ult)
+                + "\n   (no se pudo continuar el analisis a partir de aqui)");
+        } else {
+            errores.add(describir(info));
+        }
+    }
+:};
+
+/* ---- Helpers para construir el arbol ---- */
+action code {:
+    /* Crea un nodo interno con un valor y sus hijos (ignora nulos). */
+    public Nodo nodo(String valor, Nodo... hijos) {
+        Nodo n = new Nodo(valor);
+        for (Nodo h : hijos) if (h != null) n.agregarHijo(h);
+        return n;
+    }
+    /* Crea una hoja (terminal) con su lexema. */
+    public Nodo hoja(String valor) {
+        return new Nodo(valor);
+    }
+:};
+
+/* ===================== TERMINALES ===================== */
+/* (deben coincidir con los nombres del enum/lexer)       */
+
+terminal ENTERO, DECIMAL, CARACTER, CADENA, BOOLEANO;   // tipos de dato
+terminal MT, INP;                                       // entrada / salida
+terminal VERDADERO, FALSO;                                   // booleanos
+terminal String IDENTIFICADOR, NUMERO, CADENA_LITERAL, CARACTER_LITERAL; // con valor
+terminal SUMA, RESTA, MULT, DIV;                        // operadores
+terminal ASIGNACION, COMA, COMILLA, MENOR, MAYOR, PAR_IZQ, PAR_DER, FIN_LINEA;   // simbolos
+terminal ERROR;   // caracter no reconocido (lo emite el lexer)
+
+/* ===================== NO TERMINALES ===================== */
+
+non terminal Nodo programa, instruccion;
+non terminal Nodo declaracion, tipo_dato, lista_declaraciones, declaracion_simple;
+non terminal Nodo asignacion;
+non terminal Nodo instruccion_salida, lista_elementos_salida, elemento_salida;
+non terminal Nodo instruccion_entrada;
+non terminal Nodo expresion, termino, factor;
+
+/* ===================== SIMBOLO INICIAL ===================== */
+
+start with programa;
+
+/* ===================== PRODUCCIONES ===================== */
+
+programa ::= 
+             {: RESULT = nodo("programa"); parser.raiz = RESULT; :}   /* épsilon */
+           | programa:p instruccion:i
+             {: p.agregarHijo(i); RESULT = p; parser.raiz = RESULT; :}
+           ;
+
+instruccion ::= declaracion:d FIN_LINEA
+                {: RESULT = nodo("instruccion", d, hoja(":_:")); :}
+              | asignacion:a FIN_LINEA
+                {: RESULT = nodo("instruccion", a, hoja(":_:")); :}
+              | instruccion_salida:s FIN_LINEA
+                {: RESULT = nodo("instruccion", s, hoja(":_:")); :}
+              | instruccion_entrada:e FIN_LINEA
+                {: RESULT = nodo("instruccion", e, hoja(":_:")); :}
+              | error FIN_LINEA
+                {: RESULT = nodo("instruccion", hoja("<error>"), hoja(":_:")); :}
+              ;
+
+/* ---- Declaraciones ---- */
+declaracion ::= tipo_dato:t lista_declaraciones:l
+                {: RESULT = nodo("declaracion", t, l); :}
+              ;
+
+tipo_dato ::= ENTERO   {: RESULT = nodo("tipo_dato", hoja("entero"));   :}
+            | DECIMAL  {: RESULT = nodo("tipo_dato", hoja("decimal"));  :}
+            | CARACTER {: RESULT = nodo("tipo_dato", hoja("caracter")); :}
+            | CADENA   {: RESULT = nodo("tipo_dato", hoja("cadena"));   :}
+            | BOOLEANO {: RESULT = nodo("tipo_dato", hoja("booleano")); :}
+            ;
+
+lista_declaraciones ::= declaracion_simple:d
+                        {: RESULT = nodo("lista_declaraciones", d); :}
+                      | lista_declaraciones:l COMA declaracion_simple:d
+                        {: l.agregarHijo(hoja(",")); l.agregarHijo(d); RESULT = l; :}
+                      ;
+
+declaracion_simple ::= IDENTIFICADOR:id ASIGNACION expresion:e
+                       {: RESULT = nodo("declaracion_simple", hoja(id), hoja("="), e); :}
+                     | IDENTIFICADOR:id
+                       {: RESULT = nodo("declaracion_simple", hoja(id)); :}
+                     ;
+
+/* ---- Asignacion ---- */
+asignacion ::= IDENTIFICADOR:id ASIGNACION expresion:e
+               {: RESULT = nodo("asignacion", hoja(id), hoja("="), e); :}
+             ;
+
+/* ---- Salida:  mt < e1, e2, ... > ---- */
+instruccion_salida ::= MT MENOR lista_elementos_salida:l MAYOR
+                       {: RESULT = nodo("instruccion_salida",
+                                        hoja("mt"), hoja("<"), l, hoja(">")); :}
+                     ;
+
+lista_elementos_salida ::= elemento_salida:e
+                           {: RESULT = nodo("lista_elementos_salida", e); :}
+                         | lista_elementos_salida:l COMA elemento_salida:e
+                           {: l.agregarHijo(hoja(",")); l.agregarHijo(e); RESULT = l; :}
+                         ;
+
+elemento_salida ::= expresion:e
+                    {: RESULT = nodo("elemento_salida", e); :}
+                  ;
+
+/* ---- Entrada:  inp < id > ---- */
+instruccion_entrada ::= INP MENOR IDENTIFICADOR:id MAYOR
+                        {: RESULT = nodo("instruccion_entrada",
+                                         hoja("inp"), hoja("<"), hoja(id), hoja(">")); :}
+                      ;
+
+/* ---- Expresiones (recursion izquierda: permite a + b + c) ---- */
+expresion ::= expresion:e SUMA termino:t
+              {: RESULT = nodo("expresion", e, hoja("+"), t); :}
+            | expresion:e RESTA termino:t
+              {: RESULT = nodo("expresion", e, hoja("-"), t); :}
+            | termino:t
+              {: RESULT = nodo("expresion", t); :}
+            ;
+
+termino ::= termino:t MULT factor:f
+            {: RESULT = nodo("termino", t, hoja("*"), f); :}
+          | termino:t DIV factor:f
+            {: RESULT = nodo("termino", t, hoja("/"), f); :}
+          | factor:f
+            {: RESULT = nodo("termino", f); :}
+          ;
+
+factor ::= NUMERO:n
+           {: RESULT = nodo("factor", hoja(n)); :}
+         | IDENTIFICADOR:id
+           {: RESULT = nodo("factor", hoja(id)); :}
+         | PAR_IZQ expresion:e PAR_DER
+           {: RESULT = nodo("factor", hoja("("), e, hoja(")")); :}
+         | CADENA_LITERAL:c
+           {: RESULT = nodo("factor", hoja(c)); :}
+         | CARACTER_LITERAL:c
+           {: RESULT = nodo("factor", hoja(c)); :}
+         | VERDADERO
+           {: RESULT = nodo("factor", hoja("true")); :}
+         | FALSO
+           {: RESULT = nodo("factor", hoja("false")); :}
+         ;

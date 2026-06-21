@@ -1,0 +1,8 @@
+entero contador = 0 limite = 10 :_:
+decimal promedio = 85.5
+cadena mensaje = @Resultado final :_:
+caracter grado = 'B' :_:
+booleano aprobado = true :_:
+contador = (limite - 2) * 3 + 1 / 2 :_:
+mt < mensaje, promedio, grado > :_:
+inp < contador > :_:
