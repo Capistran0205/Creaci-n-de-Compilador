@@ -65,6 +65,7 @@ Espacio          = {LineTerminator}|[ \t\f]
 "-"                 { return symbol(sym.RESTA);      }
 "*"                 { return symbol(sym.MULT);       }
 "/"                 { return symbol(sym.DIV);        }
+"^"                 { return symbol(sym.POT);   }
 
 /* ---- Literales (llevan su lexema como valor) ---- */
 {Numero}            { return symbol(sym.NUMERO,           yytext()); }

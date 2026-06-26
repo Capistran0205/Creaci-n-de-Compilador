@@ -1,1 +1,13 @@
+# ── Artefactos de compilación (se regeneran con Build, no van al repo) ──
+/build/
 /dist/
+/build_check/
+
+# ── Configuración privada de NetBeans (por usuario/máquina) ──
+/nbproject/private/
+
+# ── Backups del editor y temporales ──
+*~
+*.orig
+*.bak
+*.txt

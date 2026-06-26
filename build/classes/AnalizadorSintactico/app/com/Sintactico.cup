@@ -62,6 +62,7 @@ parser code {:
         if (id == sym.RESTA)      return "\"-\"";
         if (id == sym.MULT)       return "\"*\"";
         if (id == sym.DIV)        return "\"/\"";
+        if (id == sym.POT)   return "\"^\"";
         String n = nombresTerminales().get(id);
         return (n != null) ? n : ("token#" + id);
     }
@@ -82,7 +83,7 @@ parser code {:
     private boolean esInicioDeExpresion(int s) {
         return s == sym.NUMERO || s == sym.IDENTIFICADOR || s == sym.PAR_IZQ
             || s == sym.CADENA_LITERAL || s == sym.CARACTER_LITERAL
-            || s == sym.VERDADERO || s == sym.FALSO;
+            || s == sym.VERDADERO || s == sym.FALSO || s == sym.RESTA;
     }
 
     /* ---- Sugerencia basada en lo que el parser esperaba ahi ---- */
@@ -180,6 +181,11 @@ action code {:
     public Nodo hoja(String valor) {
         return new Nodo(valor);
     }
+    /* Crea una hoja con su clase de token y posicion (1-based), para la fase
+       semantica. left/right vienen del lexer (yyline/yycolumn, 0-based). */
+    public Nodo hojaTok(String lexema, String tipoToken, int left, int right) {
+        return new Nodo(lexema, tipoToken, left + 1, right + 1);
+    }
 :};
 
 /* ===================== TERMINALES ===================== */
@@ -189,9 +195,10 @@ terminal ENTERO, DECIMAL, CARACTER, CADENA, BOOLEANO;   // tipos de dato
 terminal MT, INP;                                       // entrada / salida
 terminal VERDADERO, FALSO;                                   // booleanos
 terminal String IDENTIFICADOR, NUMERO, CADENA_LITERAL, CARACTER_LITERAL; // con valor
-terminal SUMA, RESTA, MULT, DIV;                        // operadores
+terminal SUMA, RESTA, MULT, DIV, POT;                   // operadores
 terminal ASIGNACION, COMA, COMILLA, MENOR, MAYOR, PAR_IZQ, PAR_DER, FIN_LINEA;   // simbolos
 terminal ERROR;   // caracter no reconocido (lo emite el lexer)
+terminal UMINUS;  // pseudo-terminal: solo para %prec del menos unario
 
 /* ===================== NO TERMINALES ===================== */
 
@@ -200,7 +207,13 @@ non terminal Nodo declaracion, tipo_dato, lista_declaraciones, declaracion_simpl
 non terminal Nodo asignacion;
 non terminal Nodo instruccion_salida, lista_elementos_salida, elemento_salida;
 non terminal Nodo instruccion_entrada;
-non terminal Nodo expresion, termino, factor;
+non terminal Nodo expresion;
+
+/* ==================== PRECEDENCIAS (de menor a mayor) ==================== */
+precedence left  SUMA, RESTA;
+precedence left  MULT, DIV;
+precedence right UMINUS;
+precedence right POT;
 
 /* ===================== SIMBOLO INICIAL ===================== */
 
@@ -245,14 +258,17 @@ lista_declaraciones ::= declaracion_simple:d
                       ;
 
 declaracion_simple ::= IDENTIFICADOR:id ASIGNACION expresion:e
-                       {: RESULT = nodo("declaracion_simple", hoja(id), hoja("="), e); :}
+                       {: RESULT = nodo("declaracion_simple",
+                                        hojaTok(id, "IDENTIFICADOR", idleft, idright), hoja("="), e); :}
                      | IDENTIFICADOR:id
-                       {: RESULT = nodo("declaracion_simple", hoja(id)); :}
+                       {: RESULT = nodo("declaracion_simple",
+                                        hojaTok(id, "IDENTIFICADOR", idleft, idright)); :}
                      ;
 
 /* ---- Asignacion ---- */
 asignacion ::= IDENTIFICADOR:id ASIGNACION expresion:e
-               {: RESULT = nodo("asignacion", hoja(id), hoja("="), e); :}
+               {: RESULT = nodo("asignacion",
+                                hojaTok(id, "IDENTIFICADOR", idleft, idright), hoja("="), e); :}
              ;
 
 /* ---- Salida:  mt < e1, e2, ... > ---- */
@@ -274,38 +290,37 @@ elemento_salida ::= expresion:e
 /* ---- Entrada:  inp < id > ---- */
 instruccion_entrada ::= INP MENOR IDENTIFICADOR:id MAYOR
                         {: RESULT = nodo("instruccion_entrada",
-                                         hoja("inp"), hoja("<"), hoja(id), hoja(">")); :}
+                                         hoja("inp"), hoja("<"),
+                                         hojaTok(id, "IDENTIFICADOR", idleft, idright), hoja(">")); :}
                       ;
 
-/* ---- Expresiones (recursion izquierda: permite a + b + c) ---- */
-expresion ::= expresion:e SUMA termino:t
-              {: RESULT = nodo("expresion", e, hoja("+"), t); :}
-            | expresion:e RESTA termino:t
-              {: RESULT = nodo("expresion", e, hoja("-"), t); :}
-            | termino:t
-              {: RESULT = nodo("expresion", t); :}
+/* ---- Expresiones (gramatica ambigua resuelta por PRECEDENCIAS) ----
+   Asociatividad/precedencia:  + -  <  * /  <  menos unario  <  ^      */
+expresion ::= expresion:a SUMA expresion:b
+              {: RESULT = nodo("expresion", a, hoja("+"), b); :}
+            | expresion:a RESTA expresion:b
+              {: RESULT = nodo("expresion", a, hoja("-"), b); :}
+            | expresion:a MULT expresion:b
+              {: RESULT = nodo("expresion", a, hoja("*"), b); :}
+            | expresion:a DIV expresion:b
+              {: RESULT = nodo("expresion", a, hoja("/"), b); :}
+            | expresion:a POT expresion:b
+              {: RESULT = nodo("expresion", a, hoja("^"), b); :}
+            | RESTA expresion:a
+              {: RESULT = nodo("expresion", hoja("-"), a); :}
+              %prec UMINUS
+            | PAR_IZQ expresion:a PAR_DER
+              {: RESULT = nodo("expresion", hoja("("), a, hoja(")")); :}
+            | NUMERO:n
+              {: RESULT = nodo("expresion", hojaTok(n, "NUMERO", nleft, nright)); :}
+            | IDENTIFICADOR:id
+              {: RESULT = nodo("expresion", hojaTok(id, "IDENTIFICADOR", idleft, idright)); :}
+            | CADENA_LITERAL:c
+              {: RESULT = nodo("expresion", hojaTok(c, "CADENA_LITERAL", cleft, cright)); :}
+            | CARACTER_LITERAL:c
+              {: RESULT = nodo("expresion", hojaTok(c, "CARACTER_LITERAL", cleft, cright)); :}
+            | VERDADERO:v
+              {: RESULT = nodo("expresion", hojaTok("verdadero", "VERDADERO", vleft, vright)); :}
+            | FALSO:v
+              {: RESULT = nodo("expresion", hojaTok("falso", "FALSO", vleft, vright)); :}
             ;
-
-termino ::= termino:t MULT factor:f
-            {: RESULT = nodo("termino", t, hoja("*"), f); :}
-          | termino:t DIV factor:f
-            {: RESULT = nodo("termino", t, hoja("/"), f); :}
-          | factor:f
-            {: RESULT = nodo("termino", f); :}
-          ;
-
-factor ::= NUMERO:n
-           {: RESULT = nodo("factor", hoja(n)); :}
-         | IDENTIFICADOR:id
-           {: RESULT = nodo("factor", hoja(id)); :}
-         | PAR_IZQ expresion:e PAR_DER
-           {: RESULT = nodo("factor", hoja("("), e, hoja(")")); :}
-         | CADENA_LITERAL:c
-           {: RESULT = nodo("factor", hoja(c)); :}
-         | CARACTER_LITERAL:c
-           {: RESULT = nodo("factor", hoja(c)); :}
-         | VERDADERO
-           {: RESULT = nodo("factor", hoja("true")); :}
-         | FALSO
-           {: RESULT = nodo("factor", hoja("false")); :}
-         ;

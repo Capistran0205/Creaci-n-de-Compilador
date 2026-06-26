@@ -15,8 +15,11 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import AnalizadorLexico.app.com.AnalizadorLexico;
 import AnalizadorLexico.app.com.Token;
+import static AnalizadorLexico.app.com.Token.ERROR;
+import static AnalizadorLexico.app.com.Token.LINEA;
 import AnalizadorSintactico.app.com.LexerCup;
 import AnalizadorSintactico.app.com.Sintactico;
+import AnalizadorSemantico.app.com.AnalizadorSemantico;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Image;
@@ -85,7 +88,7 @@ public class InterfazCompilador extends javax.swing.JFrame {
         this.setTitle("Compilador de Infinix");
         this.setResizable(false);
         this.setLocationRelativeTo(null);
-        this.setSize(new Dimension(880, 460));
+        this.setSize(new Dimension(880, 520));
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.applyColors();
         dataModel = new DefaultTableModel() {
@@ -98,6 +101,8 @@ public class InterfazCompilador extends javax.swing.JFrame {
         dataModel.addColumn("Lexema");
         dataModel.addColumn("Patrón");
         this.jLexerTable.setModel(dataModel);
+        this.jTxtCodigoFuente.setEnabled(true);
+        this.jChCodigoFuente.setSelected(true);
     }
 
     /**
@@ -124,6 +129,7 @@ public class InterfazCompilador extends javax.swing.JFrame {
         jTxtCodigoFuente = new javax.swing.JTextPane();
         jScrollPane1 = new javax.swing.JScrollPane();
         jLexerTable = new javax.swing.JTable();
+        jBtnSemantico = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setIconImage(getIconImage());
@@ -190,6 +196,7 @@ public class InterfazCompilador extends javax.swing.JFrame {
             }
         });
 
+        jTxtCodigoFuente.setFont(new java.awt.Font("Consolas", 0, 12)); // NOI18N
         jScrollPane4.setViewportView(jTxtCodigoFuente);
 
         jLexerTable.setBackground(new java.awt.Color(255, 255, 255));
@@ -210,6 +217,15 @@ public class InterfazCompilador extends javax.swing.JFrame {
         jLexerTable.setSelectionBackground(new java.awt.Color(51, 204, 255));
         jLexerTable.setShowGrid(true);
         jScrollPane1.setViewportView(jLexerTable);
+
+        jBtnSemantico.setBackground(new java.awt.Color(153, 51, 255));
+        jBtnSemantico.setForeground(new java.awt.Color(0, 0, 0));
+        jBtnSemantico.setText("Analizador Semántico");
+        jBtnSemantico.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jBtnSemanticoActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -233,13 +249,14 @@ public class InterfazCompilador extends javax.swing.JFrame {
                                     .addComponent(jBtnSintactico, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(jBtnAnalizadorLexico, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(jBtnLimpiar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jBtnCargarCodigo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                                    .addComponent(jBtnCargarCodigo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jBtnSemantico, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                             .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 112, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(18, 18, 18)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(jLabel2)
                             .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 365, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addContainerGap(40, Short.MAX_VALUE))
+                .addContainerGap(39, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -249,38 +266,42 @@ public class InterfazCompilador extends javax.swing.JFrame {
                     .addComponent(jLabel1)
                     .addComponent(jLabel2))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 244, Short.MAX_VALUE)
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jChCodigoFuente))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(jBtnAnalizadorLexico, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(24, 24, 24)
-                        .addComponent(jBtnSintactico, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jBtnSintactico, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(18, 18, 18)
+                        .addComponent(jBtnSemantico, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(28, 28, 28)
                         .addComponent(jBtnLimpiar, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(18, 18, 18)
-                        .addComponent(jBtnCargarCodigo, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 244, Short.MAX_VALUE)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel3)
-                    .addComponent(jChCodigoFuente))
+                        .addComponent(jBtnCargarCodigo, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 59, Short.MAX_VALUE)
+                .addComponent(jLabel3)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(62, Short.MAX_VALUE))
+                .addGap(26, 26, 26))
         );
 
-        getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 880, 460));
+        getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 880, 500));
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jBtnAnalizadorLexicoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnAnalizadorLexicoActionPerformed
-        if (this.jTxtCodigoFuente.getText().isBlank() || this.jTxtCodigoFuente.getText().isBlank()) {
+    public void analizarLexicamente(){
+        if (this.jTxtCodigoFuente.getText().isBlank() || this.jTxtCodigoFuente.getText().isEmpty()) {
             this.jTxtValidacionSintactico.setForeground(new Color(255, 99, 71));
             this.jTxtValidacionSintactico.setText("No hay código fuente para analizar");
             return;
         }
-
+        // Creación del archivo para almacenar el código fuente escrito en el campo de texto: jTxtCodigoFuente
         File file = new File("Prueba.txt");
         try (PrintWriter escribir = new PrintWriter(file)) {
             escribir.print(this.jTxtCodigoFuente.getText());
@@ -288,10 +309,11 @@ public class InterfazCompilador extends javax.swing.JFrame {
             Logger.getLogger(InterfazCompilador.class.getName()).log(Level.SEVERE, null, ex);
             return;
         }
+        // Lectura del archivo previamente creado con le código fuente (recorriendo su contenido)
         try (Reader lector = new BufferedReader(new FileReader(file))) {
             numToken = 1;
             contador = 1;
-            var lexer = new AnalizadorLexico(lector);
+            var lexer = new AnalizadorLexico(lector); // se instancia el lexer con el contenido del archivo
 
             // UN solo modelo: el mismo que limpias es el que llenas
             DefaultTableModel dataModel = (DefaultTableModel) this.jLexerTable.getModel();
@@ -299,16 +321,17 @@ public class InterfazCompilador extends javax.swing.JFrame {
 
             Token tokens;
             while ((tokens = lexer.yylex()) != null) {
-                Object[] row = null;
+                Object[] row = null; // Inicialización de la fila para mostrar el token en el formato: Número, Lexema y el patrón que sigue
                 switch (tokens) {
-                    case LINEA ->
+                    case LINEA -> // Nueva línea: se incrementa el contador de líneas y no se agrega a la tabla
                         contador++;
                     case ERROR ->
                         row = new Object[]{numToken, lexer.lexeme,
-                            "Error, símbolo no definido (línea " + contador + ")"};
+                            "Error, símbolo no definido (línea " + contador + ")"}; // Error léxico detectado internamente el contenido
                     default ->
-                        row = new Object[]{numToken, lexer.lexeme, tokens};
+                        row = new Object[]{numToken, lexer.lexeme, tokens}; // Token reconocido: se agrega a la tabla con su número, lexema y patrón
                 }
+                // Se agrega la fila a la tabla si no es nula (es decir, si no es un salto de línea)
                 if (row != null) {
                     dataModel.addRow(row);
                     numToken++;
@@ -319,9 +342,13 @@ public class InterfazCompilador extends javax.swing.JFrame {
         } catch (IOException ex) {
             Logger.getLogger(InterfazCompilador.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+    
+    private void jBtnAnalizadorLexicoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnAnalizadorLexicoActionPerformed
+        analizarLexicamente();
     }//GEN-LAST:event_jBtnAnalizadorLexicoActionPerformed
 
-    private void jBtnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnLimpiarActionPerformed
+    public void limpiarAnalisis(){
         DefaultTableModel model = (DefaultTableModel) jLexerTable.getModel();
         model.setRowCount(0);  // Esto elimina todas las filas de la tabla del Lexer
         this.jTxtCodigoFuente.setText(null);
@@ -329,10 +356,13 @@ public class InterfazCompilador extends javax.swing.JFrame {
         this.jTxtCodigoFuente.setEditable(true);
         this.jTxtValidacionSintactico.setForeground(Color.BLACK);
         raiz = null;
+    }
+    
+    private void jBtnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnLimpiarActionPerformed
+        limpiarAnalisis();
     }//GEN-LAST:event_jBtnLimpiarActionPerformed
 
-
-    private void jBtnSintacticoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnSintacticoActionPerformed
+    public void analizarSintacticamente(){
         if (this.jTxtCodigoFuente.getText().isBlank() || this.jTxtCodigoFuente.getText().isBlank()) {
             this.jTxtValidacionSintactico.setForeground(new Color(255, 99, 71));
             this.jTxtValidacionSintactico.setText("No hay código fuente para analizar");
@@ -385,7 +415,83 @@ public class InterfazCompilador extends javax.swing.JFrame {
         } catch (Exception ex) {
             Logger.getLogger(InterfazCompilador.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+    
+
+    private void jBtnSintacticoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnSintacticoActionPerformed
+        analizarSintacticamente();
     }//GEN-LAST:event_jBtnSintacticoActionPerformed
+
+    /**
+     * Fase semantica. Enlaza tu boton nuevo asi:
+     *   private void jBtnSemanticoActionPerformed(java.awt.event.ActionEvent evt) {
+     *       analizarSemantica();
+     *   }
+     * Reparsea el codigo; si la sintaxis es valida, corre el AnalizadorSemantico
+     * (tabla de simbolos + verificacion de tipos con promocion numerica) y
+     * muestra errores/avisos o el mensaje de exito en jTxtValidacionSintactico.
+     */
+    public void analizarSemantica() {
+        if (this.jTxtCodigoFuente.getText().isBlank()) {
+            this.jTxtValidacionSintactico.setForeground(new Color(255, 99, 71));
+            this.jTxtValidacionSintactico.setText("No hay código fuente para analizar");
+            return;
+        }
+
+        File file = new File("Prueba.txt");
+        try (PrintWriter escribir = new PrintWriter(file)) {
+            escribir.print(this.jTxtCodigoFuente.getText());
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(InterfazCompilador.class.getName()).log(Level.SEVERE, null, ex);
+            return;
+        }
+
+        try (Reader lector = new BufferedReader(new FileReader(file))) {
+            LexerCup lexer = new LexerCup(lector);
+            var parser = new Sintactico(lexer);
+            parser.parse();
+
+            // La semantica requiere un arbol sintacticamente valido
+            if (parser.huboErrores()) {
+                this.jTxtValidacionSintactico.setForeground(new Color(255, 44, 44));
+                this.jTxtValidacionSintactico.setText(
+                        "No se puede analizar la semántica: hay errores de sintaxis.\n"
+                      + "Corrige el análisis sintáctico primero.\n\n"
+                      + parser.getErrores());
+                return;
+            }
+
+            AnalizadorSemantico semantico = new AnalizadorSemantico(parser.raiz);
+            semantico.analizar();
+
+            StringBuilder sb = new StringBuilder();
+            if (semantico.huboErrores()) {
+                sb.append("Análisis semántico con errores:\nSe encontraron ")
+                  .append(semantico.getErrores().size()).append(" error(es):\n\n");
+                int n = 1;
+                for (String e : semantico.getErrores()) {
+                    sb.append("No.").append(n++).append(" ").append(e).append("\n");
+                }
+                this.jTxtValidacionSintactico.setForeground(new Color(255, 44, 44));
+            } else {
+                sb.append("Análisis semántico correcto: tipos y declaraciones válidos.");
+                this.jTxtValidacionSintactico.setForeground(new Color(80, 200, 120));
+            }
+            // Advertencias (no bloquean): se listan al final si las hay
+            if (!semantico.getAvisos().isEmpty()) {
+                sb.append("\n\nAdvertencias (").append(semantico.getAvisos().size()).append("):\n");
+                for (String w : semantico.getAvisos()) {
+                    sb.append("- ").append(w).append("\n");
+                }
+            }
+            this.jTxtValidacionSintactico.setText(sb.toString());
+
+        } catch (IOException ex) {
+            Logger.getLogger(InterfazCompilador.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (Exception ex) {
+            Logger.getLogger(InterfazCompilador.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
 
     private void jBtnCargarCodigoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnCargarCodigoActionPerformed
         // Objeto JFileChooser para seleccionar y abrir el código fuente
@@ -422,6 +528,10 @@ public class InterfazCompilador extends javax.swing.JFrame {
             this.jChCodigoFuente.setText("Habilitar Edición de Código Fuente");
         }
     }//GEN-LAST:event_jChCodigoFuenteItemStateChanged
+
+    private void jBtnSemanticoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBtnSemanticoActionPerformed
+        analizarSemantica();
+    }//GEN-LAST:event_jBtnSemanticoActionPerformed
 
     /**
      * @param args the command line arguments
@@ -463,6 +573,7 @@ public class InterfazCompilador extends javax.swing.JFrame {
     private javax.swing.JButton jBtnAnalizadorLexico;
     private javax.swing.JButton jBtnCargarCodigo;
     private javax.swing.JButton jBtnLimpiar;
+    private javax.swing.JButton jBtnSemantico;
     private javax.swing.JButton jBtnSintactico;
     private javax.swing.JCheckBox jChCodigoFuente;
     private javax.swing.JLabel jLabel1;
@@ -516,7 +627,7 @@ public class InterfazCompilador extends javax.swing.JFrame {
             // PASO 2: Crear patrones de expresiones regulares para identificar cada elemento
             Pattern stringPattern = Pattern.compile("@([^@\\\\]|\\\\.)*@"); // Cadenas: @texto@
             Pattern charPattern = Pattern.compile("'([^'\\\\]|\\\\.)'");          // Caracteres: 'c'
-            Pattern reservedPattern = Pattern.compile("\\b(mt|inp)\\b");  // Palabras reservadas
+            Pattern reservedPattern = Pattern.compile("\\b(mt|inp|verdadero|falso)\\b");  // Palabras reservadas
             Pattern dataTypesPattern = Pattern.compile("\\b(entero|cadena|caracter|decimal|booleano)\\b"); // Tipos de datos
             Pattern numbersPattern = Pattern.compile("\\b-?\\d+(\\.\\d+)?\\b");   // Números enteros y decimales
             Pattern commentsPattern = Pattern.compile("(#.*)|/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/");

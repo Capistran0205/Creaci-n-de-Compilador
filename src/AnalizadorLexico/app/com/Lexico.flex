@@ -94,6 +94,7 @@ EspacioBlanco    = [ \t\f]+
 "-"                 { return tk(Token.RESTA);      }
 "*"                 { return tk(Token.MULT);       }
 "/"                 { return tk(Token.DIV);        }
+"^"                 { return tk(Token.POT);        }
 
 /* ---- Literales ---- */
 {Numero}            { return tk(Token.NUMERO);           }

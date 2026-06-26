@@ -11,7 +11,7 @@ public enum Categoria {
     RESERVADA,      // palabras clave (entero, mt, inp, ...)
     LITERAL,        // valores (numeros, cadenas, caracteres, booleanos)
     IDENTIFICADOR,  // nombres definidos por el usuario
-    OPERADOR,       // + - * /
+    OPERADOR,       // + - * / ^
     SIMBOLO,        // = , < > ( ) :_: '
     CONTROL,        // tokens internos (salto de linea)
     ERROR           // lexema no reconocido

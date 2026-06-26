@@ -8,33 +8,35 @@ package AnalizadorSintactico.app.com;
 /** CUP generated class containing symbol constants. */
 public class sym {
   /* terminals */
-  public static final int MENOR = 22;
+  public static final int MENOR = 23;
   public static final int CADENA_LITERAL = 13;
   public static final int CADENA = 5;
   public static final int DECIMAL = 3;
-  public static final int FIN_LINEA = 26;
+  public static final int FIN_LINEA = 27;
   public static final int SUMA = 15;
   public static final int INP = 8;
-  public static final int ERROR = 27;
+  public static final int ERROR = 28;
   public static final int VERDADERO = 9;
+  public static final int POT = 19;
   public static final int BOOLEANO = 6;
   public static final int MT = 7;
   public static final int CARACTER = 4;
   public static final int FALSO = 10;
-  public static final int COMA = 20;
-  public static final int ASIGNACION = 19;
-  public static final int MAYOR = 23;
+  public static final int COMA = 21;
+  public static final int ASIGNACION = 20;
+  public static final int MAYOR = 24;
   public static final int MULT = 17;
   public static final int EOF = 0;
   public static final int DIV = 18;
-  public static final int COMILLA = 21;
-  public static final int PAR_IZQ = 24;
+  public static final int COMILLA = 22;
+  public static final int PAR_IZQ = 25;
   public static final int error = 1;
   public static final int NUMERO = 12;
-  public static final int PAR_DER = 25;
+  public static final int PAR_DER = 26;
   public static final int IDENTIFICADOR = 11;
   public static final int CARACTER_LITERAL = 14;
   public static final int ENTERO = 2;
+  public static final int UMINUS = 29;
   public static final int RESTA = 16;
   public static final String[] terminalNames = new String[] {
   "EOF",
@@ -56,6 +58,7 @@ public class sym {
   "RESTA",
   "MULT",
   "DIV",
+  "POT",
   "ASIGNACION",
   "COMA",
   "COMILLA",
@@ -64,7 +67,8 @@ public class sym {
   "PAR_IZQ",
   "PAR_DER",
   "FIN_LINEA",
-  "ERROR"
+  "ERROR",
+  "UMINUS"
   };
 }
 

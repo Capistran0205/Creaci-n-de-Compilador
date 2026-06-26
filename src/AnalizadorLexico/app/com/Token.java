@@ -36,6 +36,7 @@ public enum Token {
     RESTA(Categoria.OPERADOR),  // -
     MULT (Categoria.OPERADOR),  // *
     DIV  (Categoria.OPERADOR),  // /
+    POT (Categoria.OPERADOR), // ^
  
     // ---- Simbolos / delimitadores ----
     ASIGNACION(Categoria.SIMBOLO),  // =
